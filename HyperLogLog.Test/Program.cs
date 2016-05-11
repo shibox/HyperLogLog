@@ -17,7 +17,7 @@ namespace HyperLogLog.Test
 
         private static void TestCountInt32()
         {
-            IHyperLogLog<int> estimator = new CardinalityEstimator(14);
+            IHyperLogLog<int> estimator = new CardinalityEstimator();
 
             Stopwatch w = Stopwatch.StartNew();
             for (int i = 1; i <= 1000000; i++)
