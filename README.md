@@ -5,7 +5,7 @@ is optimize from https://github.com/Microsoft/CardinalityEstimation
 ## Usage
 Usage is very simple:
 ```
-ICardinalityEstimator<string> estimator = new CardinalityEstimator();
+IHyperLogLog<string> estimator = new CardinalityEstimator();
 
 estimator.Add("Alice");
 estimator.Add("Bob");
