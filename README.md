@@ -36,8 +36,9 @@ ulong count = estimator.Count(); // will be 3
 ## Nuget Package
 This code is available as the Nuget package [`HyperLogLog`](https://www.nuget.org/packages/HyperLogLog/).  To install, run the following command in the Package Manager Console:
 
-Install-Package HyperLogLog
 ```
+Install-Package HyperLogLog
+
 
 ### Performance of over 10000000 iterations - typical usage
 
