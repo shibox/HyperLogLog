@@ -39,7 +39,7 @@ This code is available as the Nuget package [`HyperLogLog`](https://www.nuget.or
 ```
 Install-Package HyperLogLog
 ```
-### Performance of over 10000000 iterations - typical usage
+### Performance of over 10,000,000 iterations -single typical usage
 
 <table>
 	<tr>
@@ -49,22 +49,53 @@ Install-Package HyperLogLog
 	</tr>
 	<tr>
 		<td>IHyperLogLog&lt;int&gt;</td>
-		<td>81ms</td>
+		<td>314ms</td>
 		<td></td>
 	</tr>
 	<tr>
 		<td>IHyperLogLog&lt;uint&gt;</td>
-		<td>118ms</td>
+		<td>314ms</td>
 		<td>&nbsp;</td>
 	</tr>
 	<tr>
 		<td>IHyperLogLog&lt;long&gt;</td>
-		<td>559ms</td>
+		<td>315ms</td>
 		<td>&nbsp;</td>
 	</tr>
 	<tr>
 		<td>IHyperLogLog&lt;ulong&gt;</td>
-		<td>859ms</td>
+		<td>316ms</td>
+		<td>&nbsp;</td>
+	</tr>
+</table>
+
+
+### Performance of over 10,000,000 iterations -bulk typical usage
+
+<table>
+	<tr>
+		<th>Method</th>
+		<th>Duration</th>		
+		<th>Remarks</th>
+	</tr>
+	<tr>
+		<td>IHyperLogLog&lt;int&gt;</td>
+		<td>270ms</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>IHyperLogLog&lt;uint&gt;</td>
+		<td>271ms</td>
+		<td>&nbsp;</td>
+	</tr>
+	<tr>
+		<td>IHyperLogLog&lt;long&gt;</td>
+		<td>272ms</td>
+		<td>&nbsp;</td>
+	</tr>
+	<tr>
+		<td>IHyperLogLog&lt;ulong&gt;</td>
+		<td>272ms</td>
 		<td>&nbsp;</td>
 	</tr>
 </table>
