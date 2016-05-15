@@ -13,7 +13,7 @@ estimator.Add("Alice");
 estimator.Add("George Michael");
 
 ulong count = estimator.Count(); // will be 3
-```
+
 
 IHyperLogLog<int> estimator = new FastHyperLogLog();
 
@@ -23,11 +23,13 @@ estimator.Add(3);
 estimator.Add(2);
 
 ulong count = estimator.Count(); // will be 3
-```
+
 
 uint[] array = new uint[] {1,2,3,2 };
+
 IHyperLogLog<uint> estimator = new FastHyperLogLog();
 estimator.BulkAdd(array);
+
 ulong count = estimator.Count(); // will be 3
 ```
 
