@@ -39,7 +39,7 @@ This code is available as the Nuget package [`HyperLogLog`](https://www.nuget.or
 ```
 Install-Package HyperLogLog
 
-
+```
 ### Performance of over 10000000 iterations - typical usage
 
 <table>
