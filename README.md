@@ -48,22 +48,22 @@ Install-Package HyperLogLog
 		<th>Remarks</th>
 	</tr>
 	<tr>
-		<td>IHyperLogLog%3Cint%3E</td>
+		<td>IHyperLogLog&lt;int&gt;</td>
 		<td>81ms</td>
 		<td></td>
 	</tr>
 	<tr>
-		<td>IHyperLogLog<uint></td>
+		<td>IHyperLogLog&lt;uint&gt;</td>
 		<td>118ms</td>
 		<td>&nbsp;</td>
 	</tr>
 	<tr>
-		<td>IHyperLogLog<long></td>
+		<td>IHyperLogLog&lt;long&gt;</td>
 		<td>559ms</td>
 		<td>&nbsp;</td>
 	</tr>
 	<tr>
-		<td>IHyperLogLog<ulong></td>
+		<td>IHyperLogLog&lt;ulong&gt;</td>
 		<td>859ms</td>
 		<td>&nbsp;</td>
 	</tr>
