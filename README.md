@@ -48,7 +48,7 @@ Install-Package HyperLogLog
 		<th>Remarks</th>
 	</tr>
 	<tr>
-		<td>IHyperLogLog\\<int\\></td>
+		<td>IHyperLogLog%3Cint%3E</td>
 		<td>81ms</td>
 		<td></td>
 	</tr>
