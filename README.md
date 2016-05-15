@@ -1,6 +1,5 @@
 # HyperLogLog
-the fast hyperloglog implement for .net 
-is optimize from https://github.com/Microsoft/CardinalityEstimation
+the fastest hyperloglog implement for .net 
 
 ## Usage
 Usage is very simple:
