@@ -38,7 +38,6 @@ This code is available as the Nuget package [`HyperLogLog`](https://www.nuget.or
 
 ```
 Install-Package HyperLogLog
-
 ```
 ### Performance of over 10000000 iterations - typical usage
 
@@ -49,7 +48,7 @@ Install-Package HyperLogLog
 		<th>Remarks</th>
 	</tr>
 	<tr>
-		<td>IHyperLogLog\<int\></td>
+		<td>IHyperLogLog\\<int\\></td>
 		<td>81ms</td>
 		<td></td>
 	</tr>
