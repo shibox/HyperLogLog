@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Runtime.Serialization;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace HyperLogLog
 {
@@ -42,10 +40,11 @@ namespace HyperLogLog
 
         /// <summary> Indicates that the sparse representation is currently used </summary>
         private bool isSparse;
-        
+
 
         #endregion
 
+        #region 构造函数
 
         /// <summary>
         ///     C'tor
@@ -57,26 +56,23 @@ namespace HyperLogLog
         ///     and uses up to ~16kB of memory.  b=4 yields less than ~100% error and uses less than 1kB. b=16 uses up to ~64kB and usually yields 1%
         ///     error or less
         /// </param>
-        /// <param name="hashFunctionId">Type of hash function to use. Default is Murmur3, and FNV-1a is provided for legacy support</param>
         public FastHyperLogLog(int b = 14) : this(CreateEmptyState(b))
         {
 
         }
 
-        /// <summary>
-        ///     Creates a CardinalityEstimator with the given <paramref name="state" />
-        /// </summary>
-        internal FastHyperLogLog(CardinalityEstimatorState state)
+        
+        internal FastHyperLogLog(EstimatorState state)
         {
             this.bitsPerIndex = state.BitsPerIndex;
-            this.bitsForHll = 64 - this.bitsPerIndex;
-            this.m = (int)Math.Pow(2, this.bitsPerIndex);
-            this.alphaM = Utils.GetAlphaM(this.m);
+            this.bitsForHll = 64 - bitsPerIndex;
+            this.m = (int)Math.Pow(2, bitsPerIndex);
+            this.alphaM = Utils.GetAlphaM(m);
             this.subAlgorithmSelectionThreshold = Utils.GetSubAlgorithmSelectionThreshold(this.bitsPerIndex);
             this.isSparse = state.IsSparse;
             this.lookupSparse = state.LookupSparse != null ? new Dictionary<ushort, byte>(state.LookupSparse) : null;
             this.lookupDense = state.LookupDense;
-            
+
             // Each element in the sparse representation takes 15 bytes, and there is some constant overhead
             this.sparseMaxElements = Math.Max(0, this.m / 15 - 10);
             // If necessary, switch to the dense representation
@@ -86,9 +82,11 @@ namespace HyperLogLog
             }
         }
 
+        #endregion
+
         #region 公共方法
 
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void Add(string value)
         {
             fixed (char* pd = value)
@@ -107,43 +105,44 @@ namespace HyperLogLog
             }
         }
 
-        public void Add(int element)
+        public void Add(int value)
         {
-            HashCode((ulong)element);
+            HashCode((ulong)value);
         }
 
-        public void Add(uint element)
+        public void Add(uint value)
         {
-            HashCode(element);
+            HashCode(value);
         }
 
-        public void Add(long element)
+        public void Add(long value)
         {
-            HashCode((ulong)element);
+            HashCode((ulong)value);
         }
 
-        public void Add(ulong element)
+        public void Add(ulong value)
         {
-            HashCode(element);
+            HashCode(value);
         }
 
-        public void Add(float element)
+        public void Add(float value)
         {
-            HashCode((ulong)element);
+            HashCode((ulong)value);
         }
 
-        public void Add(double element)
+        public void Add(double value)
         {
-            HashCode((ulong)element);
+            HashCode((ulong)value);
         }
 
-        public void Add(byte[] element)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Add(byte[] value)
         {
             long sum = 0;
             byte overflow;
-            for (int i = 0; i < element.Length; i++)
+            for (int i = 0; i < value.Length; i++)
             {
-                sum = ((sum << 4) ^ element[i]);
+                sum = ((sum << 4) ^ value[i]);
                 overflow = (byte)(sum >> 32);
                 sum = sum - (((long)overflow) << 32);
                 sum = sum ^ overflow;
@@ -153,12 +152,12 @@ namespace HyperLogLog
             Insert((ulong)sum);
         }
 
-        public unsafe void BulkAdd(uint[] values)
+        public unsafe void BulkAdd(uint[] values,int offset,int size)
         {
-            fixed (uint* pd=&values[0])
+            fixed (uint* pd=&values[offset])
             {
                 uint* pdv = pd;
-                for (uint i = 0; i < values.Length; i++)
+                for (uint i = 0; i < size; i++)
                 {
                     ulong hash = *pdv++;
                     hash = (hash * C1);
@@ -170,37 +169,160 @@ namespace HyperLogLog
             }
         }
 
-        public void BulkAdd(string[] values)
+        public void BulkAdd(string[] values, int offset, int size)
+        {
+            for (int i = offset; i < offset + size; i++)
+                Add(values[i]);
+        }
+
+        public unsafe void BulkAdd(int[] values, int offset, int size)
+        {
+            fixed (int* pd = &values[offset])
+            {
+                uint* pdv = (uint*)pd;
+                for (uint i = 0; i < size; i++)
+                {
+                    ulong hash = *pdv++;
+                    hash = (hash * C1);
+                    hash ^= ((hash << 31) | (hash >> 33)) * C2;
+                    hash = (hash ^ (hash >> 33)) * 0xff51afd7ed558ccd;
+                    hash = (hash ^ (hash >> 33));
+                    Insert(hash);
+                }
+            }
+        }
+
+        public unsafe void BulkAdd(long[] values, int offset, int size)
+        {
+            fixed (long* pd = &values[offset])
+            {
+                ulong* pdv = (ulong*)pd;
+                for (uint i = 0; i < size; i++)
+                {
+                    ulong hash = *pdv++;
+                    hash = (hash * C1);
+                    hash ^= ((hash << 31) | (hash >> 33)) * C2;
+                    hash = (hash ^ (hash >> 33)) * 0xff51afd7ed558ccd;
+                    hash = (hash ^ (hash >> 33));
+                    Insert(hash);
+                }
+            }
+        }
+
+        public unsafe void BulkAdd(ulong[] values, int offset, int size)
+        {
+            fixed (ulong* pd = &values[offset])
+            {
+                ulong* pdv = pd;
+                for (uint i = 0; i < size; i++)
+                {
+                    ulong hash = *pdv++;
+                    hash = (hash * C1);
+                    hash ^= ((hash << 31) | (hash >> 33)) * C2;
+                    hash = (hash ^ (hash >> 33)) * 0xff51afd7ed558ccd;
+                    hash = (hash ^ (hash >> 33));
+                    Insert(hash);
+                }
+            }
+        }
+
+        public unsafe void BulkAdd(float[] values, int offset, int size)
+        {
+            fixed (float* pd = &values[offset])
+            {
+                uint* pdv = (uint*)pd;
+                for (uint i = 0; i < size; i++)
+                {
+                    ulong hash = *pdv++;
+                    hash = (hash * C1);
+                    hash ^= ((hash << 31) | (hash >> 33)) * C2;
+                    hash = (hash ^ (hash >> 33)) * 0xff51afd7ed558ccd;
+                    hash = (hash ^ (hash >> 33));
+                    Insert(hash);
+                }
+            }
+        }
+
+        public unsafe void BulkAdd(double[] values, int offset, int size)
+        {
+            fixed (double* pd = &values[offset])
+            {
+                ulong* pdv = (ulong*)pd;
+                for (uint i = 0; i < size; i++)
+                {
+                    ulong hash = *pdv++;
+                    hash = (hash * C1);
+                    hash ^= ((hash << 31) | (hash >> 33)) * C2;
+                    hash = (hash ^ (hash >> 33)) * 0xff51afd7ed558ccd;
+                    hash = (hash ^ (hash >> 33));
+                    Insert(hash);
+                }
+            }
+        }
+
+        public void BulkAdd(byte[][] values, int offset, int size)
+        {
+            for (int i = offset; i < offset + size; i++)
+                Add(values[i]);
+        }
+
+
+        public void AddAsInt(Stream value)
         {
             throw new NotImplementedException();
         }
 
-        public void BulkAdd(int[] values)
+        public void AddAsUInt(Stream value)
         {
             throw new NotImplementedException();
         }
 
-        public void BulkAdd(long[] values)
+        public void AddAsLong(Stream value)
         {
             throw new NotImplementedException();
         }
 
-        public void BulkAdd(ulong[] values)
+        public void AddAsULong(Stream value)
         {
             throw new NotImplementedException();
         }
 
-        public void BulkAdd(float[] values)
+        public void AddAsFloat(Stream value)
         {
             throw new NotImplementedException();
         }
 
-        public void BulkAdd(double[] values)
+        public void AddAsDouble(Stream value)
         {
             throw new NotImplementedException();
         }
 
-        public void BulkAdd(byte[][] values)
+        public void AddAsInt(byte[] value, int offset, int size)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void AddAsUInt(byte[] value, int offset, int size)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void AddAsLong(byte[] value, int offset, int size)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void AddAsULong(byte[] value, int offset, int size)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void AddAsFloat(byte[] value, int offset, int size)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void AddAsDouble(byte[] value, int offset, int size)
         {
             throw new NotImplementedException();
         }
@@ -259,6 +381,77 @@ namespace HyperLogLog
             return (ulong)Math.Round(e);
         }
 
+        public void Merge(FastHyperLogLog other)
+        {
+            if (other == null)
+            {
+                throw new ArgumentNullException("other");
+            }
+
+            if (other.m != m)
+            {
+                throw new ArgumentOutOfRangeException("other",
+                    "Cannot merge CardinalityEstimator instances with different accuracy/map sizes");
+            }
+
+            if (this.isSparse && other.isSparse)
+            {
+                foreach (KeyValuePair<ushort, byte> kvp in other.lookupSparse)
+                {
+                    ushort index = kvp.Key;
+                    byte otherRank = kvp.Value;
+                    byte thisRank;
+                    lookupSparse.TryGetValue(index, out thisRank);
+                    lookupSparse[index] = Math.Max(thisRank, otherRank);
+                }
+                if (lookupSparse.Count > sparseMaxElements)
+                {
+                    SwitchToDenseRepresentation();
+                }
+            }
+            else
+            {
+                SwitchToDenseRepresentation();
+                if (other.isSparse)
+                {
+                    foreach (KeyValuePair<ushort, byte> kvp in other.lookupSparse)
+                    {
+                        ushort index = kvp.Key;
+                        byte rank = kvp.Value;
+                        this.lookupDense[index] = Math.Max(lookupDense[index], rank);
+                    }
+                }
+                else
+                {
+                    for (var i = 0; i < m; i++)
+                    {
+                        lookupDense[i] = Math.Max(lookupDense[i], other.lookupDense[i]);
+                    }
+                }
+            }
+        }
+
+        public static FastHyperLogLog Merge(IList<FastHyperLogLog> estimators)
+        {
+            if (!estimators.Any())
+            {
+                throw new ArgumentException(string.Format("Was asked to merge 0 instances of {0}", typeof(FastHyperLogLog)),
+                    "estimators");
+            }
+
+            var ans = new FastHyperLogLog(estimators[0].bitsPerIndex);
+            foreach (FastHyperLogLog estimator in estimators)
+            {
+                ans.Merge(estimator);
+            }
+
+            return ans;
+        }
+
+        #endregion
+
+        #region 私有
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void HashCode(ulong hash)
         {
@@ -281,187 +474,61 @@ namespace HyperLogLog
                 else
                     break;
             }
-            if (this.isSparse)
+            if (isSparse)
             {
                 byte prevRank;
-                this.lookupSparse.TryGetValue(sub, out prevRank);
-                this.lookupSparse[sub] = Math.Max(prevRank, sigma);
-                if (this.lookupSparse.Count > this.sparseMaxElements)
+                lookupSparse.TryGetValue(sub, out prevRank);
+                lookupSparse[sub] = Math.Max(prevRank, sigma);
+                if (lookupSparse.Count > this.sparseMaxElements)
                     SwitchToDenseRepresentation();
             }
             else
-                this.lookupDense[sub] = Math.Max(this.lookupDense[sub], sigma);
+                lookupDense[sub] = Math.Max(lookupDense[sub], sigma);
         }
 
-        /// <summary>
-        ///     Merges the given <paramref name="other" /> CardinalityEstimator instance into this one
-        /// </summary>
-        /// <param name="other">another instance of CardinalityEstimator</param>
-        public void Merge(FastHyperLogLog other)
+        internal EstimatorState GetState()
         {
-            if (other == null)
+            return new EstimatorState
             {
-                throw new ArgumentNullException("other");
-            }
-
-            if (other.m != this.m)
-            {
-                throw new ArgumentOutOfRangeException("other",
-                    "Cannot merge CardinalityEstimator instances with different accuracy/map sizes");
-            }
-
-            //this.CountAdditions += other.CountAdditions;
-            if (this.isSparse && other.isSparse)
-            {
-                // Merge two sparse instances
-                foreach (KeyValuePair<ushort, byte> kvp in other.lookupSparse)
-                {
-                    ushort index = kvp.Key;
-                    byte otherRank = kvp.Value;
-                    byte thisRank;
-                    this.lookupSparse.TryGetValue(index, out thisRank);
-                    this.lookupSparse[index] = Math.Max(thisRank, otherRank);
-                }
-
-                // Switch to dense if necessary
-                if (this.lookupSparse.Count > this.sparseMaxElements)
-                {
-                    SwitchToDenseRepresentation();
-                }
-            }
-            else
-            {
-                // Make sure this (target) instance is dense, then merge
-                SwitchToDenseRepresentation();
-                if (other.isSparse)
-                {
-                    foreach (KeyValuePair<ushort, byte> kvp in other.lookupSparse)
-                    {
-                        ushort index = kvp.Key;
-                        byte rank = kvp.Value;
-                        this.lookupDense[index] = Math.Max(this.lookupDense[index], rank);
-                    }
-                }
-                else
-                {
-                    for (var i = 0; i < this.m; i++)
-                    {
-                        this.lookupDense[i] = Math.Max(this.lookupDense[i], other.lookupDense[i]);
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        ///     Merges the given CardinalityEstimator instances and returns the result
-        /// </summary>
-        /// <param name="estimators">Instances of CardinalityEstimator</param>
-        /// <returns>The merged CardinalityEstimator</returns>
-        public static FastHyperLogLog Merge(IList<FastHyperLogLog> estimators)
-        {
-            if (!estimators.Any())
-            {
-                throw new ArgumentException(string.Format("Was asked to merge 0 instances of {0}", typeof(FastHyperLogLog)),
-                    "estimators");
-            }
-
-            var ans = new FastHyperLogLog(estimators[0].bitsPerIndex);
-            foreach (FastHyperLogLog estimator in estimators)
-            {
-                ans.Merge(estimator);
-            }
-
-            return ans;
-        }
-
-        #endregion
-
-
-        internal CardinalityEstimatorState GetState()
-        {
-            return new CardinalityEstimatorState
-            {
-                BitsPerIndex = this.bitsPerIndex,
-                //DirectCount = this.directCount,
-                IsSparse = this.isSparse,
-                LookupDense = this.lookupDense,
-                LookupSparse = this.lookupSparse,
-                //HashFunctionId = this.hashFunctionId,
-                //CountAdditions = this.CountAdditions,
+                BitsPerIndex = bitsPerIndex,
+                IsSparse = isSparse,
+                LookupDense = lookupDense,
+                LookupSparse = lookupSparse,
             };
         }
 
-        /// <summary>
-        ///     Creates state for an empty CardinalityEstimator : DirectCount and LookupSparse are empty, LookupDense is null.
-        /// </summary>
-        /// <param name="b"><see cref="CardinalityEstimator(int, HashFunctionId)" /></param>
-        /// <param name="hashFunctionId"><see cref="CardinalityEstimator(int, HashFunctionId)" /></param>
-        private static CardinalityEstimatorState CreateEmptyState(int b)
+        private static EstimatorState CreateEmptyState(int b)
         {
             if (b < 4 || b > 16)
             {
                 throw new ArgumentOutOfRangeException("b", b, "Accuracy out of range, legal range is 4 <= BitsPerIndex <= 16");
             }
-
-            return new CardinalityEstimatorState
+            return new EstimatorState
             {
                 BitsPerIndex = b,
-                //DirectCount = new HashSet<ulong>(),
                 IsSparse = true,
                 LookupSparse = new Dictionary<ushort, byte>(),
                 LookupDense = null,
-                //HashFunctionId = hashFunctionId,
-                //CountAdditions = 0,
             };
         }
 
-        /// <summary>
-        ///     Adds an element's hash code to the counted set
-        /// </summary>
-        /// <param name="hashCode">Hash code of the element to add</param>
-        //private void AddElementHash(ulong hashCode)
-        //{
-        //    var sub = (ushort)(hashCode >> this.bitsForHll);
-        //    byte sigma = Utils.GetSigma(hashCode, this.bitsForHll);
-        //    if (this.isSparse)
-        //    {
-        //        byte prevRank;
-        //        this.lookupSparse.TryGetValue(sub, out prevRank);
-        //        this.lookupSparse[sub] = Math.Max(prevRank, sigma);
-        //        if (this.lookupSparse.Count > this.sparseMaxElements)
-        //        {
-        //            SwitchToDenseRepresentation();
-        //        }
-        //    }
-        //    else
-        //    {
-        //        this.lookupDense[sub] = Math.Max(this.lookupDense[sub], sigma);
-        //    }
-        //}
-
-        /// <summary>
-        ///     Converts this estimator from the sparse to the dense representation
-        /// </summary>
         private void SwitchToDenseRepresentation()
         {
-            if (!this.isSparse)
+            if (!isSparse)
                 return;
 
-            this.lookupDense = new byte[this.m];
-            foreach (KeyValuePair<ushort, byte> kvp in this.lookupSparse)
+            lookupDense = new byte[this.m];
+            foreach (KeyValuePair<ushort, byte> kvp in lookupSparse)
             {
                 int index = kvp.Key;
-                this.lookupDense[index] = kvp.Value;
+                lookupDense[index] = kvp.Value;
             }
-            this.lookupSparse = null;
-            this.isSparse = false;
+            lookupSparse = null;
+            isSparse = false;
         }
 
-        [OnDeserialized]
-        internal void SetHashFunctionAfterDeserializing(StreamingContext context)
-        {
-            //this.hashFunction = HashFunctionFactory.GetHashFunction(this.hashFunctionId);
-        }
+        #endregion
+
 
     }
 }

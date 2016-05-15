@@ -32,7 +32,8 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DocumentationFile>bin\Release\HyperLogLog.XML</DocumentationFile>
+    <DocumentationFile>
+    </DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -46,14 +47,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BiasCorrection.cs" />
-    <Compile Include="CardinalityEstimator.cs" />
-    <Compile Include="CardinalityEstimatorSerializer.cs" />
-    <Compile Include="CardinalityEstimatorState.cs" />
+    <Compile Include="EstimatorState.cs" />
     <Compile Include="Utils.cs" />
-    <Compile Include="FastHash.cs" />
     <Compile Include="FastHyperLogLog.cs" />
     <Compile Include="IHyperLogLog.cs" />
-    <Compile Include="IHashFunction.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
