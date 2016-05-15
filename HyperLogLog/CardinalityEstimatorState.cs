@@ -9,10 +9,10 @@ namespace HyperLogLog
     internal class CardinalityEstimatorState
     {
         public int BitsPerIndex;
-        public HashSet<ulong> DirectCount;
+        //public HashSet<ulong> DirectCount;
         public bool IsSparse;
         public byte[] LookupDense;
         public IDictionary<ushort, byte> LookupSparse;
-        public ulong CountAdditions;
+        //public ulong CountAdditions;
     }
 }

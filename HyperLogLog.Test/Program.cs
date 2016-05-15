@@ -17,11 +17,13 @@ namespace HyperLogLog.Test
 
         private static void TestCountInt32()
         {
-            IHyperLogLog<int> estimator = new CardinalityEstimator();
-
+            IHyperLogLog<uint> estimator = new FastHyperLogLog();
+            uint[] array = new uint[10000000];
+            for (int i = 0; i < array.Length; i++)
+                array[i] = (uint)i;
             Stopwatch w = Stopwatch.StartNew();
-            for (int i = 1; i <= 1000000; i++)
-                estimator.Add(i);
+            
+            estimator.BulkAdd(array);
             w.Stop();
 
             ulong count = estimator.Count();
@@ -31,7 +33,7 @@ namespace HyperLogLog.Test
 
         private static void TestCountString()
         {
-            IHyperLogLog<string> estimator = new CardinalityEstimator(14);
+            IHyperLogLog<string> estimator = new FastHyperLogLog(14);
             Stopwatch w = Stopwatch.StartNew();
             estimator.Add("Alice");
             estimator.Add("Bob");

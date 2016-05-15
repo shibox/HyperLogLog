@@ -49,8 +49,9 @@
     <Compile Include="CardinalityEstimator.cs" />
     <Compile Include="CardinalityEstimatorSerializer.cs" />
     <Compile Include="CardinalityEstimatorState.cs" />
-    <Compile Include="Extensions.cs" />
+    <Compile Include="Utils.cs" />
     <Compile Include="FastHash.cs" />
+    <Compile Include="FastHyperLogLog.cs" />
     <Compile Include="IHyperLogLog.cs" />
     <Compile Include="IHashFunction.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
