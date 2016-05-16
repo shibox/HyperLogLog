@@ -12,9 +12,10 @@ namespace HyperLogLog.Test
         static void Main(string[] args)
         {
             //TestCountInt32();
-            TestCountUInt32();
+            //TestCountUInt32();
             //TestCountString();
             //TestCountUInt64();
+            TestCountInt32AsByte();
         }
 
         private static void TestCountUInt32()
@@ -78,6 +79,23 @@ namespace HyperLogLog.Test
             Console.WriteLine(count + "    cost:" + w.ElapsedMilliseconds);
             Console.ReadLine();
             
+        }
+
+        private static void TestCountInt32AsByte()
+        {
+            IHyperLogLog<int> estimator = new FastHyperLogLog();
+            int[] array = new int[10000000];
+            for (int i = 0; i < array.Length; i++)
+                array[i] = i;
+            byte[] bytes = new byte[array.Length * 4];
+            Buffer.BlockCopy(array, 0, bytes, 0, bytes.Length);
+            Stopwatch w = Stopwatch.StartNew();
+            estimator.AddAsInt(bytes, 0, array.Length);
+            w.Stop();
+
+            ulong count = estimator.Count();
+            Console.WriteLine(count + "    cost:" + w.ElapsedMilliseconds);
+            Console.ReadLine();
         }
 
     }

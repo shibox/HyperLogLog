@@ -269,62 +269,152 @@ namespace HyperLogLog
 
         public void AddAsInt(Stream value)
         {
-            throw new NotImplementedException();
+            byte[] buffer = new byte[1024];
+            int count = 0;
+            while ((count = value.Read(buffer, 0, buffer.Length)) > 0 && count % 4 == 0)
+                AddAsInt(buffer, 0, count >> 2);
         }
 
         public void AddAsUInt(Stream value)
         {
-            throw new NotImplementedException();
+            byte[] buffer = new byte[1024];
+            int count = 0;
+            while ((count = value.Read(buffer, 0, buffer.Length)) > 0 && count % 4 == 0)
+                AddAsUInt(buffer, 0, count >> 2);
         }
 
         public void AddAsLong(Stream value)
         {
-            throw new NotImplementedException();
+            byte[] buffer = new byte[1024];
+            int count = 0;
+            while ((count = value.Read(buffer, 0, buffer.Length)) > 0 && count % 8 == 0)
+                AddAsLong(buffer, 0, count >> 3);
         }
 
         public void AddAsULong(Stream value)
         {
-            throw new NotImplementedException();
+            byte[] buffer = new byte[1024];
+            int count = 0;
+            while ((count = value.Read(buffer, 0, buffer.Length)) > 0 && count % 8 == 0)
+               AddAsULong(buffer, 0, count >> 3);
         }
 
         public void AddAsFloat(Stream value)
         {
-            throw new NotImplementedException();
+            byte[] buffer = new byte[1024];
+            int count = 0;
+            while ((count = value.Read(buffer, 0, buffer.Length)) > 0 && count % 4 == 0)
+                AddAsFloat(buffer, 0, count >> 2);
         }
 
         public void AddAsDouble(Stream value)
         {
-            throw new NotImplementedException();
+            byte[] buffer = new byte[1024];
+            int count = 0;
+            while ((count = value.Read(buffer, 0, buffer.Length)) > 0 && count % 8 == 0)
+                AddAsDouble(buffer, 0, count >> 3);
         }
 
-        public void AddAsInt(byte[] value, int offset, int size)
+        public unsafe void AddAsInt(byte[] value, int offset, int size)
         {
-            throw new NotImplementedException();
+            fixed (byte* pd = &value[offset])
+            {
+                uint* pdv = (uint*)pd;
+                for (uint i = 0; i < size; i++)
+                {
+                    ulong hash = *pdv++;
+                    hash = (hash * C1);
+                    hash ^= ((hash << 31) | (hash >> 33)) * C2;
+                    hash = (hash ^ (hash >> 33)) * 0xff51afd7ed558ccd;
+                    hash = (hash ^ (hash >> 33));
+                    Insert(hash);
+                }
+            }
         }
 
-        public void AddAsUInt(byte[] value, int offset, int size)
+        public unsafe void AddAsUInt(byte[] value, int offset, int size)
         {
-            throw new NotImplementedException();
+            fixed (byte* pd = &value[offset])
+            {
+                uint* pdv = (uint*)pd;
+                for (uint i = 0; i < size; i++)
+                {
+                    ulong hash = *pdv++;
+                    hash = (hash * C1);
+                    hash ^= ((hash << 31) | (hash >> 33)) * C2;
+                    hash = (hash ^ (hash >> 33)) * 0xff51afd7ed558ccd;
+                    hash = (hash ^ (hash >> 33));
+                    Insert(hash);
+                }
+            }
         }
 
-        public void AddAsLong(byte[] value, int offset, int size)
+        public unsafe void AddAsLong(byte[] value, int offset, int size)
         {
-            throw new NotImplementedException();
+            fixed (byte* pd = &value[offset])
+            {
+                ulong* pdv = (ulong*)pd;
+                for (uint i = 0; i < size; i++)
+                {
+                    ulong hash = *pdv++;
+                    hash = (hash * C1);
+                    hash ^= ((hash << 31) | (hash >> 33)) * C2;
+                    hash = (hash ^ (hash >> 33)) * 0xff51afd7ed558ccd;
+                    hash = (hash ^ (hash >> 33));
+                    Insert(hash);
+                }
+            }
         }
 
-        public void AddAsULong(byte[] value, int offset, int size)
+        public unsafe void AddAsULong(byte[] value, int offset, int size)
         {
-            throw new NotImplementedException();
+            fixed (byte* pd = &value[offset])
+            {
+                ulong* pdv = (ulong*)pd;
+                for (uint i = 0; i < size; i++)
+                {
+                    ulong hash = *pdv++;
+                    hash = (hash * C1);
+                    hash ^= ((hash << 31) | (hash >> 33)) * C2;
+                    hash = (hash ^ (hash >> 33)) * 0xff51afd7ed558ccd;
+                    hash = (hash ^ (hash >> 33));
+                    Insert(hash);
+                }
+            }
         }
 
-        public void AddAsFloat(byte[] value, int offset, int size)
+        public unsafe void AddAsFloat(byte[] value, int offset, int size)
         {
-            throw new NotImplementedException();
+            fixed (byte* pd = &value[offset])
+            {
+                uint* pdv = (uint*)pd;
+                for (uint i = 0; i < size; i++)
+                {
+                    ulong hash = *pdv++;
+                    hash = (hash * C1);
+                    hash ^= ((hash << 31) | (hash >> 33)) * C2;
+                    hash = (hash ^ (hash >> 33)) * 0xff51afd7ed558ccd;
+                    hash = (hash ^ (hash >> 33));
+                    Insert(hash);
+                }
+            }
         }
 
-        public void AddAsDouble(byte[] value, int offset, int size)
+        public unsafe void AddAsDouble(byte[] value, int offset, int size)
         {
-            throw new NotImplementedException();
+            fixed (byte* pd = &value[offset])
+            {
+                ulong* pdv = (ulong*)pd;
+                for (uint i = 0; i < size; i++)
+                {
+                    ulong hash = *pdv++;
+                    hash = (hash * C1);
+                    hash ^= ((hash << 31) | (hash >> 33)) * C2;
+                    hash = (hash ^ (hash >> 33)) * 0xff51afd7ed558ccd;
+                    hash = (hash ^ (hash >> 33));
+                    Insert(hash);
+                }
+            }
         }
 
         public ulong Count()
