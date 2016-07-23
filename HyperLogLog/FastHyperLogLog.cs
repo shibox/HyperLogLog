@@ -6,6 +6,9 @@ using System.Runtime.CompilerServices;
 
 namespace HyperLogLog
 {
+    /// <summary>
+    /// HyperLogLog的一种高性能实现
+    /// </summary>
     public class FastHyperLogLog : IHyperLogLog<string>, IHyperLogLog<int>, IHyperLogLog<uint>,
         IHyperLogLog<long>, IHyperLogLog<ulong>, IHyperLogLog<float>, IHyperLogLog<double>,
         IHyperLogLog<byte[]>
