@@ -89,6 +89,10 @@ namespace HyperLogLog
 
         #region 公共方法
 
+        /// <summary>
+        /// 添加一个字符串
+        /// </summary>
+        /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void Add(string value)
         {
@@ -108,36 +112,64 @@ namespace HyperLogLog
             }
         }
 
+        /// <summary>
+        /// 添加一个数字
+        /// </summary>
+        /// <param name="value"></param>
         public void Add(int value)
         {
             HashCode((ulong)value);
         }
 
+        /// <summary>
+        /// 添加一个数字
+        /// </summary>
+        /// <param name="value"></param>
         public void Add(uint value)
         {
             HashCode(value);
         }
 
+        /// <summary>
+        /// 添加一个数字
+        /// </summary>
+        /// <param name="value"></param>
         public void Add(long value)
         {
             HashCode((ulong)value);
         }
 
+        /// <summary>
+        /// 添加一个数字
+        /// </summary>
+        /// <param name="value"></param>
         public void Add(ulong value)
         {
             HashCode(value);
         }
 
+        /// <summary>
+        /// 添加一个数字
+        /// </summary>
+        /// <param name="value"></param>
         public void Add(float value)
         {
             HashCode((ulong)value);
         }
 
+        /// <summary>
+        /// 添加一个数字
+        /// </summary>
+        /// <param name="value"></param>
         public void Add(double value)
         {
             HashCode((ulong)value);
         }
 
+        /// <summary>
+        /// 添加一个数字
+        /// </summary>
+        /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(byte[] value)
         {
@@ -155,6 +187,12 @@ namespace HyperLogLog
             Insert((ulong)sum);
         }
 
+        /// <summary>
+        /// 批量添加
+        /// </summary>
+        /// <param name="values"></param>
+        /// <param name="offset"></param>
+        /// <param name="size"></param>
         public unsafe void BulkAdd(uint[] values,int offset,int size)
         {
             fixed (uint* pd=&values[offset])
@@ -172,12 +210,24 @@ namespace HyperLogLog
             }
         }
 
+        /// <summary>
+        /// 批量添加
+        /// </summary>
+        /// <param name="values"></param>
+        /// <param name="offset"></param>
+        /// <param name="size"></param>
         public void BulkAdd(string[] values, int offset, int size)
         {
             for (int i = offset; i < offset + size; i++)
                 Add(values[i]);
         }
 
+        /// <summary>
+        /// 批量添加
+        /// </summary>
+        /// <param name="values"></param>
+        /// <param name="offset"></param>
+        /// <param name="size"></param>
         public unsafe void BulkAdd(int[] values, int offset, int size)
         {
             fixed (int* pd = &values[offset])
@@ -195,6 +245,12 @@ namespace HyperLogLog
             }
         }
 
+        /// <summary>
+        /// 批量添加
+        /// </summary>
+        /// <param name="values"></param>
+        /// <param name="offset"></param>
+        /// <param name="size"></param>
         public unsafe void BulkAdd(long[] values, int offset, int size)
         {
             fixed (long* pd = &values[offset])
@@ -212,6 +268,12 @@ namespace HyperLogLog
             }
         }
 
+        /// <summary>
+        /// 批量添加
+        /// </summary>
+        /// <param name="values"></param>
+        /// <param name="offset"></param>
+        /// <param name="size"></param>
         public unsafe void BulkAdd(ulong[] values, int offset, int size)
         {
             fixed (ulong* pd = &values[offset])
@@ -229,6 +291,12 @@ namespace HyperLogLog
             }
         }
 
+        /// <summary>
+        /// 批量添加
+        /// </summary>
+        /// <param name="values"></param>
+        /// <param name="offset"></param>
+        /// <param name="size"></param>
         public unsafe void BulkAdd(float[] values, int offset, int size)
         {
             fixed (float* pd = &values[offset])
@@ -246,6 +314,12 @@ namespace HyperLogLog
             }
         }
 
+        /// <summary>
+        /// 批量添加
+        /// </summary>
+        /// <param name="values"></param>
+        /// <param name="offset"></param>
+        /// <param name="size"></param>
         public unsafe void BulkAdd(double[] values, int offset, int size)
         {
             fixed (double* pd = &values[offset])
@@ -263,13 +337,22 @@ namespace HyperLogLog
             }
         }
 
+        /// <summary>
+        /// 批量添加
+        /// </summary>
+        /// <param name="values"></param>
+        /// <param name="offset"></param>
+        /// <param name="size"></param>
         public void BulkAdd(byte[][] values, int offset, int size)
         {
             for (int i = offset; i < offset + size; i++)
                 Add(values[i]);
         }
 
-
+        /// <summary>
+        /// 以流模式的数据添加
+        /// </summary>
+        /// <param name="value"></param>
         public void AddAsInt(Stream value)
         {
             byte[] buffer = new byte[1024];
@@ -278,6 +361,10 @@ namespace HyperLogLog
                 AddAsInt(buffer, 0, count >> 2);
         }
 
+        /// <summary>
+        /// 以流模式的数据添加
+        /// </summary>
+        /// <param name="value"></param>
         public void AddAsUInt(Stream value)
         {
             byte[] buffer = new byte[1024];
@@ -286,6 +373,10 @@ namespace HyperLogLog
                 AddAsUInt(buffer, 0, count >> 2);
         }
 
+        /// <summary>
+        /// 以流模式的数据添加
+        /// </summary>
+        /// <param name="value"></param>
         public void AddAsLong(Stream value)
         {
             byte[] buffer = new byte[1024];
@@ -294,6 +385,10 @@ namespace HyperLogLog
                 AddAsLong(buffer, 0, count >> 3);
         }
 
+        /// <summary>
+        /// 以流模式的数据添加
+        /// </summary>
+        /// <param name="value"></param>
         public void AddAsULong(Stream value)
         {
             byte[] buffer = new byte[1024];
@@ -302,6 +397,10 @@ namespace HyperLogLog
                AddAsULong(buffer, 0, count >> 3);
         }
 
+        /// <summary>
+        /// 以流模式的数据添加
+        /// </summary>
+        /// <param name="value"></param>
         public void AddAsFloat(Stream value)
         {
             byte[] buffer = new byte[1024];
@@ -310,6 +409,10 @@ namespace HyperLogLog
                 AddAsFloat(buffer, 0, count >> 2);
         }
 
+        /// <summary>
+        /// 以流模式的数据添加
+        /// </summary>
+        /// <param name="value"></param>
         public void AddAsDouble(Stream value)
         {
             byte[] buffer = new byte[1024];
@@ -318,6 +421,12 @@ namespace HyperLogLog
                 AddAsDouble(buffer, 0, count >> 3);
         }
 
+        /// <summary>
+        /// 以二进制模式的数据添加
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="offset"></param>
+        /// <param name="size"></param>
         public unsafe void AddAsInt(byte[] value, int offset, int size)
         {
             fixed (byte* pd = &value[offset])
@@ -335,6 +444,12 @@ namespace HyperLogLog
             }
         }
 
+        /// <summary>
+        /// 以二进制模式的数据添加
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="offset"></param>
+        /// <param name="size"></param>
         public unsafe void AddAsUInt(byte[] value, int offset, int size)
         {
             fixed (byte* pd = &value[offset])
@@ -352,6 +467,12 @@ namespace HyperLogLog
             }
         }
 
+        /// <summary>
+        /// 以二进制模式的数据添加
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="offset"></param>
+        /// <param name="size"></param>
         public unsafe void AddAsLong(byte[] value, int offset, int size)
         {
             fixed (byte* pd = &value[offset])
@@ -369,6 +490,12 @@ namespace HyperLogLog
             }
         }
 
+        /// <summary>
+        /// 以二进制模式的数据添加
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="offset"></param>
+        /// <param name="size"></param>
         public unsafe void AddAsULong(byte[] value, int offset, int size)
         {
             fixed (byte* pd = &value[offset])
@@ -386,6 +513,12 @@ namespace HyperLogLog
             }
         }
 
+        /// <summary>
+        /// 以二进制模式的数据添加
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="offset"></param>
+        /// <param name="size"></param>
         public unsafe void AddAsFloat(byte[] value, int offset, int size)
         {
             fixed (byte* pd = &value[offset])
@@ -403,6 +536,12 @@ namespace HyperLogLog
             }
         }
 
+        /// <summary>
+        /// 以二进制模式的数据添加
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="offset"></param>
+        /// <param name="size"></param>
         public unsafe void AddAsDouble(byte[] value, int offset, int size)
         {
             fixed (byte* pd = &value[offset])
@@ -420,6 +559,10 @@ namespace HyperLogLog
             }
         }
 
+        /// <summary>
+        /// 获得估值结果数量
+        /// </summary>
+        /// <returns></returns>
         public ulong Count()
         {
             double zInverse = 0;
@@ -474,6 +617,10 @@ namespace HyperLogLog
             return (ulong)Math.Round(e);
         }
 
+        /// <summary>
+        /// 与另一个估值计数器合并
+        /// </summary>
+        /// <param name="other"></param>
         public void Merge(FastHyperLogLog other)
         {
             if (other == null)
@@ -524,6 +671,11 @@ namespace HyperLogLog
             }
         }
 
+        /// <summary>
+        /// 合并多个估值计数器
+        /// </summary>
+        /// <param name="estimators"></param>
+        /// <returns></returns>
         public static FastHyperLogLog Merge(IList<FastHyperLogLog> estimators)
         {
             if (!estimators.Any())

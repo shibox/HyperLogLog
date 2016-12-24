@@ -31,7 +31,8 @@ namespace HyperLogLog.Test
             w.Stop();
 
             ulong count = estimator.Count();
-            Console.WriteLine(count + "    cost:" + w.ElapsedMilliseconds);
+            Console.WriteLine("real count:" + array.Length + " estimator count:" + count + "    cost:" + w.ElapsedMilliseconds);
+            Console.WriteLine("error rate:" + ((1.0 - (array.Length / (float)count)) * 100).ToString("f4"));
             Console.ReadLine();
         }
 
@@ -46,7 +47,8 @@ namespace HyperLogLog.Test
             w.Stop();
 
             ulong count = estimator.Count();
-            Console.WriteLine(count + "    cost:" + w.ElapsedMilliseconds);
+            Console.WriteLine("real count:" + array.Length + " estimator count:" + count + "    cost:" + w.ElapsedMilliseconds);
+            Console.WriteLine("error rate:" + ((1.0 - (array.Length / (float)count)) * 100).ToString("f4"));
             Console.ReadLine();
         }
 
@@ -61,7 +63,8 @@ namespace HyperLogLog.Test
             w.Stop();
 
             ulong count = estimator.Count();
-            Console.WriteLine(count + "    cost:" + w.ElapsedMilliseconds);
+            Console.WriteLine("real count:" + array.Length + " estimator count:" + count + "    cost:" + w.ElapsedMilliseconds);
+            Console.WriteLine("error rate:" + ((1.0 - (array.Length / (float)count)) * 100).ToString("f4"));
             Console.ReadLine();
         }
 
@@ -76,7 +79,8 @@ namespace HyperLogLog.Test
             w.Stop();
 
             ulong count = estimator.Count();
-            Console.WriteLine(count + "    cost:" + w.ElapsedMilliseconds);
+            Console.WriteLine("real count:" + 4 + " estimator count:" + count + "    cost:" + w.ElapsedMilliseconds);
+            Console.WriteLine("error rate:" + ((1.0 - (4 / (float)count)) * 100).ToString("f4"));
             Console.ReadLine();
             
         }
@@ -94,7 +98,8 @@ namespace HyperLogLog.Test
             w.Stop();
 
             ulong count = estimator.Count();
-            Console.WriteLine(count + "    cost:" + w.ElapsedMilliseconds);
+            Console.WriteLine("real count:" + array.Length +  " estimator count:" + count + "    cost:" + w.ElapsedMilliseconds);
+            Console.WriteLine("error rate:" + ((1.0 - (array.Length / (float)count)) * 100).ToString("f4"));
             Console.ReadLine();
         }
 
