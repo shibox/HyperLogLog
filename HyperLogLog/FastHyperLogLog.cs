@@ -440,6 +440,38 @@ namespace HyperLogLog
                     hash = (hash ^ (hash >> 33)) * 0xff51afd7ed558ccd;
                     hash = (hash ^ (hash >> 33));
                     Insert(hash);
+
+                    //System.Numerics.Vector
+                    //以下方法执行大约提升10%的性能，同样可以使用SIMD加速，其中移位运算可以转换成
+                    //ulong hash1 = *pdv;
+                    //ulong hash2 = *(pdv + 1);
+                    //ulong hash3 = *(pdv + 2);
+                    //ulong hash4 = *(pdv + 3);
+                    //hash1 = (hash1 * C1);
+                    //hash2 = (hash2 * C1);
+                    //hash3 = (hash3 * C1);
+                    //hash4 = (hash4 * C1);
+
+                    //hash1 ^= ((hash1 << 31) | (hash1 >> 33)) * C2;
+                    //hash2 ^= ((hash2 << 31) | (hash2 >> 33)) * C2;
+                    //hash3 ^= ((hash3 << 31) | (hash3 >> 33)) * C2;
+                    //hash4 ^= ((hash4 << 31) | (hash4 >> 33)) * C2;
+
+                    //hash1 = (hash1 ^ (hash1 >> 33)) * 0xff51afd7ed558ccd;
+                    //hash2 = (hash2 ^ (hash2 >> 33)) * 0xff51afd7ed558ccd;
+                    //hash3 = (hash3 ^ (hash3 >> 33)) * 0xff51afd7ed558ccd;
+                    //hash4 = (hash4 ^ (hash4 >> 33)) * 0xff51afd7ed558ccd;
+
+                    //hash1 = (hash1 ^ (hash1 >> 33));
+                    //hash2 = (hash2 ^ (hash2 >> 33));
+                    //hash3 = (hash3 ^ (hash3 >> 33));
+                    //hash4 = (hash4 ^ (hash4 >> 33));
+
+                    //Insert(hash1);
+                    //Insert(hash2);
+                    //Insert(hash3);
+                    //Insert(hash4);
+                    //pdv += 4;
                 }
             }
         }
