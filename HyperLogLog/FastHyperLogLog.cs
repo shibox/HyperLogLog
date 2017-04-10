@@ -43,7 +43,7 @@ namespace HyperLogLog
 
         /// <summary> Indicates that the sparse representation is currently used </summary>
         private bool isSparse;
-
+        private static readonly byte[] masks = new byte[] { 5, 4, 3, 3, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1 };
 
         #endregion
 
@@ -429,12 +429,13 @@ namespace HyperLogLog
         /// <param name="size"></param>
         public unsafe void AddAsInt(byte[] value, int offset, int size)
         {
+            ulong hash = 0;
             fixed (byte* pd = &value[offset])
             {
                 uint* pdv = (uint*)pd;
                 for (uint i = 0; i < size; i++)
                 {
-                    ulong hash = *pdv++;
+                    hash = *pdv++;
                     hash = (hash * C1);
                     hash ^= ((hash << 31) | (hash >> 33)) * C2;
                     hash = (hash ^ (hash >> 33)) * 0xff51afd7ed558ccd;
@@ -744,13 +745,29 @@ namespace HyperLogLog
         {
             ushort sub = (ushort)(hash >> bitsForHll);
             byte sigma = 1;
-            for (int j = bitsForHll - 1; j >= 0; --j)
+            //for (int j = bitsForHll - 1; j >= 0; --j)
+            //{
+            //    if (((hash >> j) & 1) == 0)
+            //        sigma++;
+            //    else
+            //        break;
+            //}
+            int pos = (int)((hash << 14) >> 60);
+            if (pos != 0)
             {
-                if (((hash >> j) & 1) == 0)
-                    sigma++;
-                else
-                    break;
+                sigma = masks[(hash << 14) >> 60];
             }
+            else
+            {
+                for (int j = 49; j >= 0; --j)
+                {
+                    if (((hash >> j) & 1) == 0)
+                        sigma++;
+                    else
+                        break;
+                }
+            }
+
             if (isSparse)
             {
                 byte prevRank;
@@ -759,8 +776,18 @@ namespace HyperLogLog
                 if (lookupSparse.Count > this.sparseMaxElements)
                     SwitchToDenseRepresentation();
             }
-            else
-                lookupDense[sub] = Math.Max(lookupDense[sub], sigma);
+            else if(lookupDense[sub] < sigma)
+                lookupDense[sub] = sigma;
+
+            //else
+            //{
+            //    //lookupDense[sub] = Math.Max(lookupDense[sub], sigma);
+            //    if (lookupDense[sub] < sigma)
+            //    {
+            //        lookupDense[sub] = sigma;
+            //    }
+            //}
+
         }
 
         internal EstimatorState GetState()

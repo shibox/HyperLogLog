@@ -99,7 +99,7 @@ namespace HyperLogLog.Test
 
             ulong count = estimator.Count();
             Console.WriteLine("real count:" + array.Length +  " estimator count:" + count + "    cost:" + w.ElapsedMilliseconds);
-            Console.WriteLine("error rate:" + ((1.0 - (array.Length / (float)count)) * 100).ToString("f4"));
+            Console.WriteLine("error rate:" + (((double)1.0 - ((double)array.Length / (double)count)) * 100).ToString("f8"));
             Console.ReadLine();
         }
 
