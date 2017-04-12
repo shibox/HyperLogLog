@@ -5,11 +5,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HyperLogLog.Test
+namespace HyperLogLog.Performance.Tests
 {
-    class Program
+    public class HyperLogLogTests
     {
-        static void Main(string[] args)
+        public static void Run()
         {
             //TestCountInt32();
             //TestCountUInt32();
@@ -82,7 +82,7 @@ namespace HyperLogLog.Test
             Console.WriteLine("real count:" + 4 + " estimator count:" + count + "    cost:" + w.ElapsedMilliseconds);
             Console.WriteLine("error rate:" + ((1.0 - (4 / (float)count)) * 100).ToString("f4"));
             Console.ReadLine();
-            
+
         }
 
         private static void TestCountInt32AsByte()
@@ -98,10 +98,11 @@ namespace HyperLogLog.Test
             w.Stop();
 
             ulong count = estimator.Count();
-            Console.WriteLine("real count:" + array.Length +  " estimator count:" + count + "    cost:" + w.ElapsedMilliseconds);
+            Console.WriteLine("real count:" + array.Length + " estimator count:" + count + "    cost:" + w.ElapsedMilliseconds);
             Console.WriteLine("error rate:" + (((double)1.0 - ((double)array.Length / (double)count)) * 100).ToString("f8"));
             Console.ReadLine();
         }
+
 
     }
 }
