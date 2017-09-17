@@ -231,8 +231,29 @@ namespace HyperLogLog
         /// <param name="size"></param>
         public unsafe void BulkAdd(int[] values, int offset, int size)
         {
+            #region 方案1
+
+            //fixed (int* pd = &values[offset])
+            //{
+            //    uint* pdv = (uint*)pd;
+            //    for (uint i = 0; i < size; i++)
+            //    {
+            //        ulong hash = *pdv++;
+            //        hash = (hash * C1);
+            //        hash ^= ((hash << 31) | (hash >> 33)) * C2;
+            //        hash = (hash ^ (hash >> 33)) * 0xff51afd7ed558ccd;
+            //        hash = (hash ^ (hash >> 33));
+            //        Insert(hash);
+            //    }
+            //}
+
+            #endregion
+
+            #region 方案2
+
             fixed (int* pd = &values[offset])
             {
+                byte* lookd = null;
                 uint* pdv = (uint*)pd;
                 for (uint i = 0; i < size; i++)
                 {
@@ -241,9 +262,43 @@ namespace HyperLogLog
                     hash ^= ((hash << 31) | (hash >> 33)) * C2;
                     hash = (hash ^ (hash >> 33)) * 0xff51afd7ed558ccd;
                     hash = (hash ^ (hash >> 33));
-                    Insert(hash);
+
+                    ushort sub = (ushort)(hash >> bitsForHll);
+                    byte sigma = 1;
+                    if (((hash << 14) >> 60) != 0)
+                        sigma = masks[(hash << 14) >> 60];
+                    else
+                    {
+                        for (int j = 49; j >= 0; --j)
+                        {
+                            if (((hash >> j) & 1) == 0)
+                                sigma++;
+                            else
+                                break;
+                        }
+                    }
+                    if (isSparse)
+                    {
+                        byte prevRank;
+                        lookupSparse.TryGetValue(sub, out prevRank);
+                        lookupSparse[sub] = Math.Max(prevRank, sigma);
+                        if (lookupSparse.Count > this.sparseMaxElements)
+                        {
+                            SwitchToDenseRepresentation();
+                            fixed (byte* ld = &lookupDense[0])
+                            {
+                                lookd = ld;
+                            }
+                        }
+                    }
+                    else if (lookd[sub] < sigma)
+                        lookd[sub] = sigma;
                 }
             }
+
+            #endregion
+
+
         }
 
         /// <summary>
@@ -717,8 +772,28 @@ namespace HyperLogLog
             //优化后，
             ushort sub = (ushort)(hash >> bitsForHll);
             byte sigma = 1;
-            int pos = (int)((hash << 14) >> 60);
-            if (pos != 0)
+
+            #region 优化1
+
+            //int pos = (int)((hash << 14) >> 60);
+            //if (pos != 0)
+            //    sigma = masks[(hash << 14) >> 60];
+            //else
+            //{
+            //    for (int j = 49; j >= 0; --j)
+            //    {
+            //        if (((hash >> j) & 1) == 0)
+            //            sigma++;
+            //        else
+            //            break;
+            //    }
+            //}
+
+            #endregion
+
+            #region 优化2
+
+            if (((hash << 14) >> 60) != 0)
                 sigma = masks[(hash << 14) >> 60];
             else
             {
@@ -730,6 +805,9 @@ namespace HyperLogLog
                         break;
                 }
             }
+
+            #endregion
+
             #region old
             //for (int j = bitsForHll - 1; j >= 0; --j)
             //{

@@ -4,14 +4,13 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{89473BC1-1507-4C66-8905-C035CCEAD0EF}</ProjectGuid>
+    <ProjectGuid>{BE93F71B-FD2C-43DC-9D31-CC71B064FB68}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>HyperLogLog.Performance.Tests</RootNamespace>
-    <AssemblyName>HyperLogLog.Performance.Tests</AssemblyName>
-    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
+    <RootNamespace>HyperLogLog_Net45.BenchMark.Tests</RootNamespace>
+    <AssemblyName>HyperLogLog-Net45.BenchMark.Tests</AssemblyName>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>x64</PlatformTarget>
@@ -43,12 +42,22 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="HyperLogLogTests.cs" />
-    <Compile Include="Program.cs" />
+    <Compile Include="..\HyperLogLog.Performance.Tests\HyperLogLogTests.cs">
+      <Link>HyperLogLogTests.cs</Link>
+    </Compile>
+    <Compile Include="..\HyperLogLog.Performance.Tests\Program.cs">
+      <Link>Program.cs</Link>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\HyperLogLog-Net45\HyperLogLog-Net45.csproj">
+      <Project>{29ed2536-77c8-49a7-98c6-5b7f95a5a674}</Project>
+      <Name>HyperLogLog-Net45</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
