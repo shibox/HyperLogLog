@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace HyperLogLog
 {
@@ -44,6 +45,12 @@ namespace HyperLogLog
         /// <summary> Indicates that the sparse representation is currently used </summary>
         private bool isSparse;
         private static readonly byte[] masks = new byte[] { 5, 4, 3, 3, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1 };
+        private static byte[] masks4 = null;
+        private static byte[] masks5 = null;
+        private static byte[] masks6 = null;
+        private static byte[] masks7 = null;
+        private static byte[] masks8 = null;
+
         int c = 0;
 
         #endregion
@@ -64,7 +71,6 @@ namespace HyperLogLog
         {
 
         }
-
         
         internal HyperLogLog(EstimatorState state)
         {
@@ -84,6 +90,48 @@ namespace HyperLogLog
             {
                 SwitchToDenseRepresentation();
             }
+            InitMask();
+        }
+
+        private void InitMask()
+        {
+            masks4 = InitMask(4);
+            masks5 = InitMask(5);
+            masks6 = InitMask(6);
+            masks7 = InitMask(7);
+            masks8 = InitMask(8);
+        }
+
+        private byte[] InitMask(int nbit)
+        {
+            byte[] mask = new byte[1 << nbit];
+            //for (int i = mask.Length; i >= 0; --i)
+            //{
+            //    if (((hash >> i) & 1) == 0)
+            //        sigma++;
+            //    else
+            //        break;
+            //}
+            for (int v = mask.Length; v > 0; v++)
+            {
+                int sigma = 0;
+                for (int i = nbit; i >= 0; --i)
+                {
+                    if (((v >> i) & 1) == 0)
+                        sigma++;
+                    else
+                        break;
+                }
+            }
+
+            //for (int j = bitsForHll - 1; j >= 0; --j)
+            //{
+            //    if (((hash >> j) & 1) == 0)
+            //        sigma++;
+            //    else
+            //        break;
+            //}
+            return mask;
         }
 
         #endregion
@@ -233,27 +281,8 @@ namespace HyperLogLog
         {
             #region 方案1
 
-            //fixed (int* pd = &values[offset])
-            //{
-            //    uint* pdv = (uint*)pd;
-            //    for (uint i = 0; i < size; i++)
-            //    {
-            //        ulong hash = *pdv++;
-            //        hash = (hash * C1);
-            //        hash ^= ((hash << 31) | (hash >> 33)) * C2;
-            //        hash = (hash ^ (hash >> 33)) * 0xff51afd7ed558ccd;
-            //        hash = (hash ^ (hash >> 33));
-            //        Insert(hash);
-            //    }
-            //}
-
-            #endregion
-
-            #region 方案2
-
             fixed (int* pd = &values[offset])
             {
-                byte* lookd = null;
                 uint* pdv = (uint*)pd;
                 for (uint i = 0; i < size; i++)
                 {
@@ -262,43 +291,69 @@ namespace HyperLogLog
                     hash ^= ((hash << 31) | (hash >> 33)) * C2;
                     hash = (hash ^ (hash >> 33)) * 0xff51afd7ed558ccd;
                     hash = (hash ^ (hash >> 33));
-
-                    ushort sub = (ushort)(hash >> bitsForHll);
-                    byte sigma = 1;
-                    if (((hash << 14) >> 60) != 0)
-                        sigma = masks[(hash << 14) >> 60];
-                    else
-                    {
-                        for (int j = 49; j >= 0; --j)
-                        {
-                            if (((hash >> j) & 1) == 0)
-                                sigma++;
-                            else
-                                break;
-                        }
-                    }
-                    if (isSparse)
-                    {
-                        byte prevRank;
-                        lookupSparse.TryGetValue(sub, out prevRank);
-                        lookupSparse[sub] = Math.Max(prevRank, sigma);
-                        if (lookupSparse.Count > this.sparseMaxElements)
-                        {
-                            SwitchToDenseRepresentation();
-                            fixed (byte* ld = &lookupDense[0])
-                            {
-                                lookd = ld;
-                            }
-                        }
-                    }
-                    else if (lookd[sub] < sigma)
-                        lookd[sub] = sigma;
+                    Insert(hash);
                 }
             }
 
             #endregion
 
+            #region 方案2
 
+            //fixed (int* pd = &values[offset])
+            //{
+            //    byte* lookd = null;
+            //    uint* pdv = (uint*)pd;
+            //    for (uint i = 0; i < size; i++)
+            //    {
+            //        ulong hash = *pdv++;
+            //        hash = (hash * C1);
+            //        hash ^= ((hash << 31) | (hash >> 33)) * C2;
+            //        hash = (hash ^ (hash >> 33)) * 0xff51afd7ed558ccd;
+            //        hash = (hash ^ (hash >> 33));
+
+            //        ushort sub = (ushort)(hash >> bitsForHll);
+            //        byte sigma = 1;
+            //        if (((hash << 14) >> 60) != 0)
+            //            sigma = masks[(hash << 14) >> 60];
+            //        else
+            //        {
+            //            for (int j = 49; j >= 0; --j)
+            //            {
+            //                if (((hash >> j) & 1) == 0)
+            //                    sigma++;
+            //                else
+            //                    break;
+            //            }
+            //        }
+            //        if (isSparse)
+            //        {
+            //            byte prevRank;
+            //            lookupSparse.TryGetValue(sub, out prevRank);
+            //            lookupSparse[sub] = Math.Max(prevRank, sigma);
+            //            if (lookupSparse.Count > this.sparseMaxElements)
+            //            {
+            //                SwitchToDenseRepresentation();
+            //                fixed (byte* ld = &lookupDense[0])
+            //                {
+            //                    lookd = ld;
+            //                }
+            //            }
+            //        }
+            //        else if (lookd[sub] < sigma)
+            //            lookd[sub] = sigma;
+            //    }
+            //}
+
+            #endregion
+
+            counts.ToString();
+            List<KeyValuePair<byte, int>> rs = counts.ToList<KeyValuePair<byte, int>>();
+            rs.Sort(delegate (KeyValuePair<byte, int>  x, KeyValuePair<byte, int> y) { return x.Value.CompareTo(y.Value); });
+            StringBuilder sb = new StringBuilder();
+            int c = rs.Sum(item => item.Value);
+            for (int i = 0; i < rs.Count; i++)
+                sb.AppendLine(rs[i].Key + " " + rs[i].Value + " " + ((double)rs[i].Value / (double)c).ToString("f4"));
+            Console.WriteLine(sb.ToString());
         }
 
         /// <summary>
@@ -765,11 +820,12 @@ namespace HyperLogLog
             Insert(hash);
         }
 
+        public Dictionary<byte, int> counts = new Dictionary<byte, int>();
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void Insert(ulong hash)
         {
             //新方案使用移位代替条件判断，大幅度优化了性能，一个典型的测试，优化前：142ms，优化后，整体耗时：66ms，这其中哈希计算大约耗时：17ms
-            //优化后，
             ushort sub = (ushort)(hash >> bitsForHll);
             byte sigma = 1;
 
@@ -793,29 +849,36 @@ namespace HyperLogLog
 
             #region 优化2
 
-            if (((hash << 14) >> 60) != 0)
-                sigma = masks[(hash << 14) >> 60];
-            else
-            {
-                for (int j = 49; j >= 0; --j)
-                {
-                    if (((hash >> j) & 1) == 0)
-                        sigma++;
-                    else
-                        break;
-                }
-            }
+            //if (((hash << 14) >> 60) != 0)
+            //    sigma = masks[(hash << 14) >> 60];
+            //else
+            //{
+            //    for (int j = 49; j >= 0; --j)
+            //    {
+            //        if (((hash >> j) & 1) == 0)
+            //            sigma++;
+            //        else
+            //            break;
+            //    }
+            //}
 
             #endregion
 
             #region old
-            //for (int j = bitsForHll - 1; j >= 0; --j)
-            //{
-            //    if (((hash >> j) & 1) == 0)
-            //        sigma++;
-            //    else
-            //        break;
-            //}
+
+            //{ 5, 4, 3, 3, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1 };
+            for (int j = bitsForHll - 1; j >= 0; --j)
+            {
+                if (((hash >> j) & 1) == 0)
+                    sigma++;
+                else
+                    break;
+            }
+            if (counts.ContainsKey(sigma) == false)
+                counts.Add(sigma, 1);
+            else
+                counts[sigma]++;
+
             #endregion
 
             if (isSparse)
@@ -872,6 +935,439 @@ namespace HyperLogLog
         }
 
         #endregion
+
+        public static unsafe int Count(int[] values, int offset, int size)
+        {
+            #region 方案2
+
+            //bool isSparse = true;
+            //int bitsForHll = 50;
+            //int sparseMaxElements = 1082;
+            //int m = 16384;
+            //byte* mask = stackalloc byte[16];// { 5, 4, 3, 3, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1 };
+            //for (int i = 0; i < masks.Length; i++)
+            //    mask[i] = masks[i];
+            //Dictionary<ushort, byte> lookupSparse = new Dictionary<ushort, byte>();
+            //byte[] lookupDense = null;
+            //fixed (int* pd = &values[offset])
+            //{
+            //    byte* lookd = null;
+            //    uint* pdv = (uint*)pd;
+            //    for (uint i = 0; i < size; i++)
+            //    {
+            //        ulong hash = *pdv++;
+            //        hash = (hash * C1);
+            //        hash ^= ((hash << 31) | (hash >> 33)) * C2;
+            //        hash = (hash ^ (hash >> 33)) * 0xff51afd7ed558ccd;
+            //        hash = (hash ^ (hash >> 33));
+
+            //        ushort sub = (ushort)(hash >> bitsForHll);
+            //        byte sigma = 1;
+            //        if (((hash << 14) >> 60) != 0)
+            //            sigma = mask[(hash << 14) >> 60];
+            //        else
+            //        {
+            //            for (int j = 49; j >= 0; --j)
+            //            {
+            //                if (((hash >> j) & 1) == 0)
+            //                    sigma++;
+            //                else
+            //                    break;
+            //            }
+            //        }
+            //        if (isSparse)
+            //        {
+            //            byte prevRank;
+            //            lookupSparse.TryGetValue(sub, out prevRank);
+            //            lookupSparse[sub] = Math.Max(prevRank, sigma);
+            //            if (lookupSparse.Count > sparseMaxElements)
+            //            {
+            //                if (!isSparse)
+            //                    return;
+            //                lookupDense = new byte[m];
+            //                foreach (KeyValuePair<ushort, byte> kvp in lookupSparse)
+            //                {
+            //                    int index = kvp.Key;
+            //                    lookupDense[index] = kvp.Value;
+            //                }
+            //                lookupSparse = null;
+            //                isSparse = false;
+
+            //                fixed (byte* ld = &lookupDense[0])
+            //                {
+            //                    lookd = ld;
+            //                }
+            //            }
+            //        }
+            //        else if (lookd[sub] < sigma)
+            //            lookd[sub] = sigma;
+            //    }
+            //}
+
+            #endregion
+
+            #region 方案3
+
+            //int n = 0;
+
+            //int bitsForHll = 50;
+            //int m = 16384;
+            //byte* mask = stackalloc byte[16];
+            //for (int i = 0; i < masks.Length; i++)
+            //    mask[i] = masks[i];
+            //byte* lookd = stackalloc byte[m];
+            //fixed (int* pd = &values[offset])
+            //{
+            //    uint* pdv = (uint*)pd;
+            //    for (uint i = 0; i < size; i++)
+            //    {
+            //        ulong hash = *pdv++;
+            //        hash = (hash * C1);
+            //        hash ^= ((hash << 31) | (hash >> 33)) * C2;
+            //        hash = (hash ^ (hash >> 33)) * 0xff51afd7ed558ccd;
+            //        hash = (hash ^ (hash >> 33));
+
+            //        ulong sub = (hash >> bitsForHll);
+            //        byte sigma = 1;
+            //        if (((hash << 14) >> 60) != 0)
+            //            sigma = mask[(hash << 14) >> 60];
+            //        else
+            //        {
+            //            n++;
+            //            for (int j = 49; j >= 0; --j)
+            //            {
+            //                if (((hash >> j) & 1) == 0)
+            //                    sigma++;
+            //                else
+            //                    break;
+            //            }
+            //        }
+            //        if (lookd[sub] < sigma)
+            //            lookd[sub] = sigma;
+            //    }
+            //}
+            //return n;
+            #endregion
+
+            #region 方案4
+
+            //int n = 0;
+
+            //int bitsForHll = 50;
+            //int m = 16384;
+            ////byte* mask = stackalloc byte[16];
+            //int* mask = stackalloc int[16];
+            //for (int i = 0; i < masks.Length; i++)
+            //    mask[i] = masks[i];
+            //byte* lookd = stackalloc byte[m];
+            //fixed (int* pd = &values[offset])
+            //{
+            //    uint* pdv = (uint*)pd;
+            //    for (uint i = 0; i < size; i++)
+            //    {
+            //        ulong hash = *pdv++;
+            //        hash = (hash * C1);
+            //        hash ^= ((hash << 31) | (hash >> 33)) * C2;
+            //        hash = (hash ^ (hash >> 33)) * 0xff51afd7ed558ccd;
+            //        hash = (hash ^ (hash >> 33));
+
+            //        ulong sub = (hash >> bitsForHll);
+            //        int sigma = 1;
+            //        //if (((hash << 14) >> 60) != 0)
+            //            sigma = mask[(hash << 14) >> 60];
+            //        //执行次数占总次数的6.5%，去掉后时间由4949ms降低到3958ms
+            //        //else
+            //        //{
+            //        //    n++;
+            //        //    for (int j = 49; j >= 0; --j)
+            //        //    {
+            //        //        if (((hash >> j) & 1) == 0)
+            //        //            sigma++;
+            //        //        else
+            //        //            break;
+            //        //    }
+            //        //}
+            //        if (lookd[sub] < sigma)
+            //            lookd[sub] = (byte)sigma;
+            //    }
+            //}
+            //return n;
+            #endregion
+
+            #region 方案5
+
+            int n = 0;
+
+            int bitsForHll = 50;
+            int m = 16384;
+            int* mask = stackalloc int[128*4];
+            for (int i = 0; i < masks.Length; i++)
+                mask[i] = masks[i];
+            byte* lookd = stackalloc byte[m];
+            fixed (int* pd = &values[offset])
+            {
+                uint* pdv = (uint*)pd;
+                for (uint i = 0; i < size; i+=4)
+                {
+                    //ulong hash1 = *(pdv + 0);
+                    //ulong hash2 = *(pdv + 1);
+                    //ulong hash3 = *(pdv + 2);
+                    //ulong hash4 = *(pdv + 3);
+                    //pdv += 4;
+
+                    ulong hash1 = *pdv++;
+                    ulong hash2 = *pdv++;
+                    ulong hash3 = *pdv++;
+                    ulong hash4 = *pdv++;
+
+                    hash1 = (hash1 * C1);
+                    hash2 = (hash2 * C1);
+                    hash3 = (hash3 * C1);
+                    hash4 = (hash4 * C1);
+
+                    hash1 ^= ((hash1 << 31) | (hash1 >> 33)) * C2;
+                    hash2 ^= ((hash2 << 31) | (hash2 >> 33)) * C2;
+                    hash3 ^= ((hash3 << 31) | (hash3 >> 33)) * C2;
+                    hash4 ^= ((hash4 << 31) | (hash4 >> 33)) * C2;
+
+                    hash1 = (hash1 ^ (hash1 >> 33)) * 0xff51afd7ed558ccd;
+                    hash2 = (hash2 ^ (hash2 >> 33)) * 0xff51afd7ed558ccd;
+                    hash3 = (hash3 ^ (hash3 >> 33)) * 0xff51afd7ed558ccd;
+                    hash4 = (hash4 ^ (hash4 >> 33)) * 0xff51afd7ed558ccd;
+
+                    hash1 = (hash1 ^ (hash1 >> 33));
+                    hash2 = (hash2 ^ (hash2 >> 33));
+                    hash3 = (hash3 ^ (hash3 >> 33));
+                    hash4 = (hash4 ^ (hash4 >> 33));
+
+                    //int sigma1 = 1 + mask[(hash1 << 14) >> 60];
+                    //int sigma2 = 1 + mask[(hash2 << 14) >> 60];
+                    //int sigma3 = 1 + mask[(hash3 << 14) >> 60];
+                    //int sigma4 = 1 + mask[(hash4 << 14) >> 60];
+
+                    #region m1
+                    //int sigma1 = 0;
+                    //int sigma2 = 0;
+                    //int sigma3 = 0;
+                    //int sigma4 = 0;
+                    //ulong pos = ((hash1 << 14) >> 60);
+                    //if (pos != 0)
+                    //    sigma1 = mask[pos];
+                    //else
+                    //{
+                    //    for (int j = 49; j >= 0; --j)
+                    //    {
+                    //        if (((hash1 >> j) & 1) == 0)
+                    //            sigma1++;
+                    //        else
+                    //            break;
+                    //    }
+                    //}
+                    //pos = ((hash2 << 14) >> 60);
+                    //if (pos != 0)
+                    //    sigma2 = mask[pos];
+                    //else
+                    //{
+                    //    for (int j = 49; j >= 0; --j)
+                    //    {
+                    //        if (((hash2 >> j) & 1) == 0)
+                    //            sigma2++;
+                    //        else
+                    //            break;
+                    //    }
+                    //}
+                    //pos = ((hash3 << 14) >> 60);
+                    //if (pos != 0)
+                    //    sigma3 = mask[pos];
+                    //else
+                    //{
+                    //    for (int j = 49; j >= 0; --j)
+                    //    {
+                    //        if (((hash3 >> j) & 1) == 0)
+                    //            sigma3++;
+                    //        else
+                    //            break;
+                    //    }
+                    //}
+                    //pos = ((hash4 << 14) >> 60);
+                    //if (pos != 0)
+                    //    sigma4 = mask[pos];
+                    //else
+                    //{
+                    //    for (int j = 49; j >= 0; --j)
+                    //    {
+                    //        if (((hash4 >> j) & 1) == 0)
+                    //            sigma4++;
+                    //        else
+                    //            break;
+                    //    }
+                    //}
+                    #endregion
+
+                    #region m2
+                    //int sigma1 = 0;
+                    //int sigma2 = 0;
+                    //int sigma3 = 0;
+                    //int sigma4 = 0;
+                    //ulong pos = ((hash1 << 17) >> 57);
+                    //if (pos != 0)
+                    //    sigma1 = mask[pos];
+                    //else
+                    //{
+                    //    for (int j = 46; j >= 0; --j)
+                    //    {
+                    //        if (((hash1 >> j) & 1) == 0)
+                    //            sigma1++;
+                    //        else
+                    //            break;
+                    //    }
+                    //}
+                    //pos = ((hash2 << 17) >> 57);
+                    //if (pos != 0)
+                    //    sigma2 = mask[pos];
+                    //else
+                    //{
+                    //    for (int j = 46; j >= 0; --j)
+                    //    {
+                    //        if (((hash2 >> j) & 1) == 0)
+                    //            sigma2++;
+                    //        else
+                    //            break;
+                    //    }
+                    //}
+                    //pos = ((hash3 << 17) >> 57);
+                    //if (pos != 0)
+                    //    sigma3 = mask[pos];
+                    //else
+                    //{
+                    //    for (int j = 46; j >= 0; --j)
+                    //    {
+                    //        if (((hash3 >> j) & 1) == 0)
+                    //            sigma3++;
+                    //        else
+                    //            break;
+                    //    }
+                    //}
+                    //pos = ((hash4 << 17) >> 57);
+                    //if (pos != 0)
+                    //    sigma4 = mask[pos];
+                    //else
+                    //{
+                    //    for (int j = 46; j >= 0; --j)
+                    //    {
+                    //        if (((hash4 >> j) & 1) == 0)
+                    //            sigma4++;
+                    //        else
+                    //            break;
+                    //    }
+                    //}
+                    #endregion
+
+                    int sigma1 = 0;
+                    int sigma2 = 0;
+                    int sigma3 = 0;
+                    int sigma4 = 0;
+                    ulong pos = ((hash1 << 15) >> 55);
+                    if (pos != 0)
+                        sigma1 = mask[pos];
+                    else
+                    {
+                        for (int j = 44; j >= 0; --j)
+                        {
+                            if (((hash1 >> j) & 1) == 0)
+                                sigma1++;
+                            else
+                                break;
+                        }
+                    }
+                    pos = ((hash2 << 15) >> 55);
+                    if (pos != 0)
+                        sigma2 = mask[pos];
+                    else
+                    {
+                        for (int j = 44; j >= 0; --j)
+                        {
+                            if (((hash2 >> j) & 1) == 0)
+                                sigma2++;
+                            else
+                                break;
+                        }
+                    }
+                    pos = ((hash3 << 15) >> 55);
+                    if (pos != 0)
+                        sigma3 = mask[pos];
+                    else
+                    {
+                        for (int j = 44; j >= 0; --j)
+                        {
+                            if (((hash3 >> j) & 1) == 0)
+                                sigma3++;
+                            else
+                                break;
+                        }
+                    }
+                    pos = ((hash4 << 15) >> 55);
+                    if (pos != 0)
+                        sigma4 = mask[pos];
+                    else
+                    {
+                        for (int j = 44; j >= 0; --j)
+                        {
+                            if (((hash4 >> j) & 1) == 0)
+                                sigma4++;
+                            else
+                                break;
+                        }
+                    }
+
+
+                    hash1 = (hash1 >> bitsForHll);
+                    hash2 = (hash2 >> bitsForHll);
+                    hash3 = (hash3 >> bitsForHll);
+                    hash4 = (hash4 >> bitsForHll);
+
+                    if (lookd[hash1] < sigma1)
+                        lookd[hash1] = (byte)sigma1;
+                    if (lookd[hash2] < sigma2)
+                        lookd[hash2] = (byte)sigma2;
+                    if (lookd[hash3] < sigma3)
+                        lookd[hash3] = (byte)sigma3;
+                    if (lookd[hash4] < sigma4)
+                        lookd[hash4] = (byte)sigma4;
+                }
+            }
+            return n;
+            #endregion
+
+
+        }
+
+        public unsafe static ulong CountRs(int m, byte* lookd,double alphaM,int bitsPerIndex,double subAlgorithmSelectionThreshold)
+        {
+            double zInverse = 0;
+            double v = 0;
+            for (var i = 0; i < m; i++)
+            {
+                byte sigma = lookd[i];
+                zInverse += Math.Pow(2, -sigma);
+                if (sigma == 0)
+                    v++;
+            }
+            double e = alphaM * m * m / zInverse;
+            if (e <= 5.0 * m)
+                e = BiasCorrection.CorrectBias(e, bitsPerIndex);
+
+            double h;
+            if (v > 0)
+                h = m * Math.Log(m / v);
+            else
+                h = e;
+
+            if (h <= subAlgorithmSelectionThreshold)
+                return (ulong)Math.Round(h);
+            return (ulong)Math.Round(e);
+        }
+
 
 
     }

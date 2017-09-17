@@ -42,10 +42,13 @@ namespace HyperLogLog.Performance.Tests
             int[] array = new int[10000000];
             for (int i = 0; i < array.Length; i++)
                 array[i] = i;
+            int n = 0;
             Stopwatch w = Stopwatch.StartNew();
-            estimator.BulkAdd(array, 0, array.Length);
+            for (int i = 0; i < 100; i++)
+                estimator.BulkAdd(array, 0, array.Length);
+            //n = HyperLogLog.Count(array, 0, array.Length);
             w.Stop();
-
+            
             ulong count = estimator.Count();
             Console.WriteLine("real count:" + array.Length + " estimator count:" + count + "    cost:" + w.ElapsedMilliseconds);
             Console.WriteLine("error rate:" + ((1.0 - (array.Length / (float)count)) * 100).ToString("f4"));
