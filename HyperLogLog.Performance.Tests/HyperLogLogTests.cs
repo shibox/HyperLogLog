@@ -11,11 +11,11 @@ namespace HyperLogLog.Performance.Tests
     {
         public static void Run()
         {
-            //TestCountInt32();
+            TestCountInt32();
             //TestCountUInt32();
             //TestCountString();
             //TestCountUInt64();
-            TestCountInt32AsByte();
+            //TestCountInt32AsByte();
         }
 
         private static void TestCountUInt32()

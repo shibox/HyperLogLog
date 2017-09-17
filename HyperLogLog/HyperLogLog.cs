@@ -717,27 +717,27 @@ namespace HyperLogLog
             //优化后，
             ushort sub = (ushort)(hash >> bitsForHll);
             byte sigma = 1;
-            //int pos = (int)((hash << 14) >> 60);
-            //if (pos != 0)
-            //    sigma = masks[(hash << 14) >> 60];
-            //else
-            //{
-            //    for (int j = 49; j >= 0; --j)
-            //    {
-            //        if (((hash >> j) & 1) == 0)
-            //            sigma++;
-            //        else
-            //            break;
-            //    }
-            //}
-            #region old
-            for (int j = bitsForHll - 1; j >= 0; --j)
+            int pos = (int)((hash << 14) >> 60);
+            if (pos != 0)
+                sigma = masks[(hash << 14) >> 60];
+            else
             {
-                if (((hash >> j) & 1) == 0)
-                    sigma++;
-                else
-                    break;
+                for (int j = 49; j >= 0; --j)
+                {
+                    if (((hash >> j) & 1) == 0)
+                        sigma++;
+                    else
+                        break;
+                }
             }
+            #region old
+            //for (int j = bitsForHll - 1; j >= 0; --j)
+            //{
+            //    if (((hash >> j) & 1) == 0)
+            //        sigma++;
+            //    else
+            //        break;
+            //}
             #endregion
 
             if (isSparse)
