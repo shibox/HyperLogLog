@@ -50,6 +50,7 @@ namespace HyperLogLog
         private static byte[] masks6 = null;
         private static byte[] masks7 = null;
         private static byte[] masks8 = null;
+        private static byte[] masks9 = null;
 
         int c = 0;
 
@@ -95,43 +96,11 @@ namespace HyperLogLog
 
         private void InitMask()
         {
-            masks4 = InitMask(4);
-            masks5 = InitMask(5);
-            masks6 = InitMask(6);
-            masks7 = InitMask(7);
-            masks8 = InitMask(8);
-        }
-
-        private byte[] InitMask(int nbit)
-        {
-            byte[] mask = new byte[1 << nbit];
-            //for (int i = mask.Length; i >= 0; --i)
-            //{
-            //    if (((hash >> i) & 1) == 0)
-            //        sigma++;
-            //    else
-            //        break;
-            //}
-            for (int v = mask.Length; v > 0; v++)
-            {
-                int sigma = 0;
-                for (int i = nbit; i >= 0; --i)
-                {
-                    if (((v >> i) & 1) == 0)
-                        sigma++;
-                    else
-                        break;
-                }
-            }
-
-            //for (int j = bitsForHll - 1; j >= 0; --j)
-            //{
-            //    if (((hash >> j) & 1) == 0)
-            //        sigma++;
-            //    else
-            //        break;
-            //}
-            return mask;
+            //masks4 = InitMask(4);
+            //masks5 = InitMask(5);
+            //masks6 = InitMask(6);
+            //masks7 = InitMask(7);
+            //masks9 = InitMask(9);
         }
 
         #endregion
@@ -346,14 +315,14 @@ namespace HyperLogLog
 
             #endregion
 
-            counts.ToString();
-            List<KeyValuePair<byte, int>> rs = counts.ToList<KeyValuePair<byte, int>>();
-            rs.Sort(delegate (KeyValuePair<byte, int>  x, KeyValuePair<byte, int> y) { return x.Value.CompareTo(y.Value); });
-            StringBuilder sb = new StringBuilder();
-            int c = rs.Sum(item => item.Value);
-            for (int i = 0; i < rs.Count; i++)
-                sb.AppendLine(rs[i].Key + " " + rs[i].Value + " " + ((double)rs[i].Value / (double)c).ToString("f4"));
-            Console.WriteLine(sb.ToString());
+            //counts.ToString();
+            //List<KeyValuePair<byte, int>> rs = counts.ToList<KeyValuePair<byte, int>>();
+            //rs.Sort(delegate (KeyValuePair<byte, int>  x, KeyValuePair<byte, int> y) { return x.Value.CompareTo(y.Value); });
+            //StringBuilder sb = new StringBuilder();
+            //int c = rs.Sum(item => item.Value);
+            //for (int i = 0; i < rs.Count; i++)
+            //    sb.AppendLine(rs[i].Key + " " + rs[i].Value + " " + ((double)rs[i].Value / (double)c).ToString("f4"));
+            //Console.WriteLine(sb.ToString());
         }
 
         /// <summary>
@@ -874,10 +843,10 @@ namespace HyperLogLog
                 else
                     break;
             }
-            if (counts.ContainsKey(sigma) == false)
-                counts.Add(sigma, 1);
-            else
-                counts[sigma]++;
+            //if (counts.ContainsKey(sigma) == false)
+            //    counts.Add(sigma, 1);
+            //else
+            //    counts[sigma]++;
 
             #endregion
 
@@ -935,6 +904,248 @@ namespace HyperLogLog
         }
 
         #endregion
+
+        public static unsafe ulong[] Hash(int[] values, int offset, int size,ulong[] rs)
+        {
+            fixed (int* pd = &values[offset])
+            {
+                fixed (ulong* rst = &rs[0])
+                {
+                    ulong* dst = rst;
+                    uint* pdv = (uint*)pd;
+                    for (uint i = 0; i < size; i += 4)
+                    {
+                        ulong hash1 = *pdv++;
+                        ulong hash2 = *pdv++;
+                        ulong hash3 = *pdv++;
+                        ulong hash4 = *pdv++;
+
+                        hash1 = (hash1 * C1);
+                        hash2 = (hash2 * C1);
+                        hash3 = (hash3 * C1);
+                        hash4 = (hash4 * C1);
+
+                        hash1 ^= ((hash1 << 31) | (hash1 >> 33)) * C2;
+                        hash2 ^= ((hash2 << 31) | (hash2 >> 33)) * C2;
+                        hash3 ^= ((hash3 << 31) | (hash3 >> 33)) * C2;
+                        hash4 ^= ((hash4 << 31) | (hash4 >> 33)) * C2;
+
+                        hash1 = (hash1 ^ (hash1 >> 33)) * 0xff51afd7ed558ccd;
+                        hash2 = (hash2 ^ (hash2 >> 33)) * 0xff51afd7ed558ccd;
+                        hash3 = (hash3 ^ (hash3 >> 33)) * 0xff51afd7ed558ccd;
+                        hash4 = (hash4 ^ (hash4 >> 33)) * 0xff51afd7ed558ccd;
+
+                        hash1 = (hash1 ^ (hash1 >> 33));
+                        hash2 = (hash2 ^ (hash2 >> 33));
+                        hash3 = (hash3 ^ (hash3 >> 33));
+                        hash4 = (hash4 ^ (hash4 >> 33));
+
+                        *(dst + 0) = hash1;
+                        *(dst + 1) = hash2;
+                        *(dst + 2) = hash3;
+                        *(dst + 3) = hash4;
+                        dst += 4;
+                    }
+                }
+            }
+            return rs;
+
+        }
+
+        public static unsafe int CountCompute(ulong[] values, int offset, int size)
+        {
+            #region 方案5
+
+            int n = 0;
+
+            int bitsForHll = 50;
+            int m = 16384;
+            int* mask = stackalloc int[128 * 4];
+            for (int i = 0; i < masks.Length; i++)
+                mask[i] = masks[i];
+            byte* lookd = stackalloc byte[m];
+            fixed (ulong* pd = &values[offset])
+            {
+                ulong* pdv = (ulong*)pd;
+                for (uint i = 0; i < size; i += 4)
+                {
+                    ulong hash1 = *pdv++;
+                    ulong hash2 = *pdv++;
+                    ulong hash3 = *pdv++;
+                    ulong hash4 = *pdv++;
+
+                    //int sigma1 = 1 + mask[(hash1 << 14) >> 60];
+                    //int sigma2 = 1 + mask[(hash2 << 14) >> 60];
+                    //int sigma3 = 1 + mask[(hash3 << 14) >> 60];
+                    //int sigma4 = 1 + mask[(hash4 << 14) >> 60];
+
+                    int sigma1 = GetSigma(hash1, masks);
+                    int sigma2 = GetSigma(hash2, masks);
+                    int sigma3 = GetSigma(hash3, masks);
+                    int sigma4 = GetSigma(hash4, masks);
+
+                    hash1 = (hash1 >> bitsForHll);
+                    hash2 = (hash2 >> bitsForHll);
+                    hash3 = (hash3 >> bitsForHll);
+                    hash4 = (hash4 >> bitsForHll);
+
+                    if (lookd[hash1] < sigma1)
+                        lookd[hash1] = (byte)sigma1;
+                    if (lookd[hash2] < sigma2)
+                        lookd[hash2] = (byte)sigma2;
+                    if (lookd[hash3] < sigma3)
+                        lookd[hash3] = (byte)sigma3;
+                    if (lookd[hash4] < sigma4)
+                        lookd[hash4] = (byte)sigma4;
+                }
+            }
+            return n;
+            #endregion
+
+
+        }
+
+
+        public static Dictionary<ulong, int> count2 = new Dictionary<ulong, int>();
+        public static int GetSigma(ulong hash,byte[] mask)
+        {
+            //int sigma = 0;
+            //ulong pos = ((hash << 20) >> 55);
+            //if (pos != 0)
+            //    sigma = mask[pos];
+            //else
+            //{
+            //    sigma = 1;
+            //    for (int j = 49; j >= 0; --j)
+            //    {
+            //        if (((hash >> j) & 1) == 0)
+            //            sigma++;
+            //        else
+            //            break;
+            //    }
+            //}
+            //return sigma;
+
+            int sigma = 0;
+            ulong pos = ((hash << 14) >> 55);
+            //if (count2.ContainsKey(pos) == false)
+            //    count2.Add(pos, 1);
+            //else
+            //    count2[pos]++;
+
+            if (pos != 0)
+                sigma += mask[pos];
+            else
+            {
+                sigma = 1;
+                for (int j = 49; j >= 0; --j)
+                {
+                    if (((hash >> j) & 1) == 0)
+                        sigma++;
+                    else
+                        break;
+                }
+            }
+            return sigma;
+        }
+
+        public static int GetSigma(ulong hash)
+        {
+            int sigma = 1;
+            for (int j = 49; j >= 0; --j)
+            {
+                if (((hash >> j) & 1) == 0)
+                    sigma++;
+                else
+                    break;
+            }
+            return sigma;
+        }
+
+        private static byte[] InitMask(int nbit)
+        {
+            //byte[] mask = new byte[1 << nbit];
+            //for (int v = 1; v <= mask.Length; v++)
+            //{
+            //    int sigma = 1;
+            //    for (int i = GetBit(v)-1; i >= 0; --i)
+            //    {
+            //        if (((v >> i) & 1) == 0)
+            //            sigma++;
+            //        else
+            //            break;
+            //    }
+            //    mask[v-1] = (byte)sigma;
+            //}
+            //return mask;
+
+            byte[] mask = new byte[1 << nbit];
+            for (int v = 0; v < mask.Length; v++)
+            {
+                string s = Convert.ToString(v, 2).PadLeft(nbit, '0');
+                int sigma = 1;
+                for (int i = 0; i<s.Length; i++)
+                {
+                    if (s[i]=='0')
+                        sigma++;
+                    else
+                        break;
+                }
+                mask[v] = (byte)sigma;
+            }
+            return mask;
+        }
+
+        private static int GetBit(int v)
+        {
+            if (v < (1 << 1))
+                return 1;
+            else if(v < (1 << 2))
+                return 2;
+            else if (v < (1 << 3))
+                return 3;
+            else if (v < (1 << 4))
+                return 4;
+            else if (v < (1 << 5))
+                return 5;
+            else if (v < (1 << 6))
+                return 6;
+            else if (v < (1 << 7))
+                return 7;
+            else if (v < (1 << 8))
+                return 8;
+            else
+                return 9;
+        }
+
+        public static unsafe void CheckSigma(ulong[] values, int offset, int size)
+        {
+            int error = 0;
+            byte[] mask = InitMask(9);
+            //byte[] mask = masks;
+            fixed (ulong* pd = &values[offset])
+            {
+                ulong* pdv = pd;
+                for (uint i = 0; i < size; i ++)
+                {
+                    ulong hash1 = *pdv++;
+                    //ulong hash2 = *pdv++;
+                    //ulong hash3 = *pdv++;
+                    //ulong hash4 = *pdv++;
+
+                    int sigma1 = GetSigma(hash1, mask);
+                    //int sigma2 = GetSigma(hash2, mask);
+                    //int sigma3 = GetSigma(hash3, mask);
+                    //int sigma4 = GetSigma(hash4, mask);
+
+                    int sigma = GetSigma(hash1);
+                    if (sigma1 != sigma)
+                        error++;
+
+                }
+            }
+            Console.WriteLine($"error:{error}");
+        }
 
         public static unsafe int Count(int[] values, int offset, int size)
         {

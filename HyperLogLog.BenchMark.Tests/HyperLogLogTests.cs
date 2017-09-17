@@ -11,11 +11,12 @@ namespace HyperLogLog.Performance.Tests
     {
         public static void Run()
         {
-            TestCountInt32();
+            //TestCountInt32();
             //TestCountUInt32();
             //TestCountString();
             //TestCountUInt64();
             //TestCountInt32AsByte();
+            TestCheckSigma();
         }
 
         private static void TestCountUInt32()
@@ -106,6 +107,20 @@ namespace HyperLogLog.Performance.Tests
             Console.ReadLine();
         }
 
+        private static void TestCheckSigma()
+        {
+            int[] array = new int[10000000];
+            ulong[] rs = new ulong[array.Length];
+            Random rd = new Random();
+            for (int n = 0; n < 100; n++)
+            {
+                for (int i = 0; i < array.Length; i++)
+                    array[i] = rd.Next();
+                HyperLogLog.Hash(array, 0, array.Length,rs);
+                HyperLogLog.CheckSigma(rs, 0, rs.Length);
+            }
+            
 
+        }
     }
 }
