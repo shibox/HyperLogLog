@@ -16,7 +16,8 @@ namespace HyperLogLog.Performance.Tests
             //TestCountString();
             //TestCountUInt64();
             //TestCountInt32AsByte();
-            TestCheckSigma();
+            //TestCheckSigma();
+            TestBench();
         }
 
         private static void TestCountUInt32()
@@ -109,6 +110,7 @@ namespace HyperLogLog.Performance.Tests
 
         private static void TestCheckSigma()
         {
+            HyperLogLog.InitMask(9);
             int[] array = new int[10000000];
             ulong[] rs = new ulong[array.Length];
             Random rd = new Random();
@@ -119,8 +121,30 @@ namespace HyperLogLog.Performance.Tests
                 HyperLogLog.Hash(array, 0, array.Length,rs);
                 HyperLogLog.CheckSigma(rs, 0, rs.Length);
             }
-            
+        }
+
+        private static void TestBench()
+        {
+            int count = 0;
+            HyperLogLog.InitMask(9);
+            int[] array = new int[10000000];
+            ulong[] rs = new ulong[array.Length];
+            Random rd = new Random();
+            for (int i = 0; i < array.Length; i++)
+                array[i] = rd.Next();
+            HyperLogLog.Hash(array, 0, array.Length, rs);
+            Stopwatch w = Stopwatch.StartNew();
+            for (int n = 0; n < 100; n++)
+            {
+                HyperLogLog.CountCompute(rs, 0, rs.Length);
+            }
+            w.Stop();
+            Console.WriteLine("real count:" + array.Length + " estimator count:" + count + "    cost:" + w.ElapsedMilliseconds);
+            Console.WriteLine("error rate:" + ((1.0 - (array.Length / (float)count)) * 100).ToString("f4"));
+            Console.ReadLine();
 
         }
+
+
     }
 }
