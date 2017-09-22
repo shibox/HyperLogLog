@@ -952,7 +952,7 @@ namespace HyperLogLog
 
         }
 
-        public static unsafe void CountCompute(ulong[] values, int offset, int size)
+        public static unsafe ulong CountCompute(ulong[] values, int offset, int size)
         {
             int bitsForHll = 50;
             int m = 16384;
@@ -970,16 +970,17 @@ namespace HyperLogLog
                     ulong hash3 = *pdv++;
                     ulong hash4 = *pdv++;
 
-                    int sigma1 = 1 + mask[(hash1 << 14) >> 55];
-                    int sigma2 = 1 + mask[(hash2 << 14) >> 55];
-                    int sigma3 = 1 + mask[(hash3 << 14) >> 55];
-                    int sigma4 = 1 + mask[(hash4 << 14) >> 55];
+                    //int sigma1 = 1 + mask[(hash1 << 14) >> 55];
+                    //int sigma2 = 1 + mask[(hash2 << 14) >> 55];
+                    //int sigma3 = 1 + mask[(hash3 << 14) >> 55];
+                    //int sigma4 = 1 + mask[(hash4 << 14) >> 55];
 
-                    //int sigma1 = GetSigma(hash1, masks);
-                    //int sigma2 = GetSigma(hash2, masks);
-                    //int sigma3 = GetSigma(hash3, masks);
-                    //int sigma4 = GetSigma(hash4, masks);
+                    int sigma1 = GetSigma(hash1, masks);
+                    int sigma2 = GetSigma(hash2, masks);
+                    int sigma3 = GetSigma(hash3, masks);
+                    int sigma4 = GetSigma(hash4, masks);
 
+                    #region old
                     //int sigma1 = 0;
                     //int sigma2 = 0;
                     //int sigma3 = 0;
@@ -1036,6 +1037,7 @@ namespace HyperLogLog
                     //            break;
                     //    }
                     //}
+                    #endregion
 
                     hash1 = (hash1 >> bitsForHll);
                     hash2 = (hash2 >> bitsForHll);
@@ -1052,37 +1054,13 @@ namespace HyperLogLog
                         lookd[hash4] = (byte)sigma4;
                 }
             }
-
+            return Count(lookd);
         }
 
-
-        public static Dictionary<ulong, int> count2 = new Dictionary<ulong, int>();
         public static int GetSigma(ulong hash,byte[] mask)
         {
-            //int sigma = 0;
-            //ulong pos = ((hash << 20) >> 55);
-            //if (pos != 0)
-            //    sigma = mask[pos];
-            //else
-            //{
-            //    sigma = 1;
-            //    for (int j = 49; j >= 0; --j)
-            //    {
-            //        if (((hash >> j) & 1) == 0)
-            //            sigma++;
-            //        else
-            //            break;
-            //    }
-            //}
-            //return sigma;
-
             int sigma = 0;
             ulong pos = ((hash << 14) >> 55);
-            //if (count2.ContainsKey(pos) == false)
-            //    count2.Add(pos, 1);
-            //else
-            //    count2[pos]++;
-
             if (pos != 0)
                 sigma += mask[pos];
             else
@@ -1114,21 +1092,6 @@ namespace HyperLogLog
 
         public static byte[] InitMask(int nbit)
         {
-            //byte[] mask = new byte[1 << nbit];
-            //for (int v = 1; v <= mask.Length; v++)
-            //{
-            //    int sigma = 1;
-            //    for (int i = GetBit(v)-1; i >= 0; --i)
-            //    {
-            //        if (((v >> i) & 1) == 0)
-            //            sigma++;
-            //        else
-            //            break;
-            //    }
-            //    mask[v-1] = (byte)sigma;
-            //}
-            //return mask;
-
             byte[] mask = new byte[1 << nbit];
             for (int v = 0; v < mask.Length; v++)
             {
@@ -1604,8 +1567,11 @@ namespace HyperLogLog
 
         }
 
-        public unsafe static ulong CountRs(int m, byte* lookd,double alphaM,int bitsPerIndex,double subAlgorithmSelectionThreshold)
+        public unsafe static ulong Count(byte* lookd, int m=16384,int bitsPerIndex=14)
         {
+            double alphaM = Utils.GetAlphaM(m);
+            double subAlgorithmSelectionThreshold = Utils.GetSubAlgorithmSelectionThreshold(bitsPerIndex);
+
             double zInverse = 0;
             double v = 0;
             for (var i = 0; i < m; i++)

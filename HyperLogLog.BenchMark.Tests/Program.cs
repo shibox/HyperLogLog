@@ -11,6 +11,7 @@ namespace HyperLogLog.Performance.Tests
         static void Main(string[] args)
         {
             HyperLogLogTests.Run();
+            Console.ReadLine();
         }
     }
 }
