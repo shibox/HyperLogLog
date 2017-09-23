@@ -45,7 +45,7 @@ namespace HyperLogLog.Performance.Tests
             Stopwatch w = Stopwatch.StartNew();
             for (int i = 0; i < 100; i++)
                 //estimator.BulkAdd(array, 0, array.Length);
-                HyperLogLog.Count(array, 0, array.Length);
+                HyperLogLog.Count14(array, 0, array.Length);
             w.Stop();
 
             ulong count = estimator.Count();

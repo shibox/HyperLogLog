@@ -3,8 +3,129 @@ using System.Runtime.CompilerServices;
 
 namespace HyperLogLog
 {
-    internal static class Utils
+    public static class Utils
     {
+        private const ulong C1 = 0x87c37b91114253d5UL;
+        private const ulong C2 = 0x4cf5ad432745937fUL;
+
+        public static unsafe void Hash(int[] values, int offset, int size, ulong[] rs)
+        {
+            Hash(values, offset, size, rs, 0);
+        }
+
+        public static unsafe void Hash(int[] values, int offset, int size, ulong[] rs,int rsOffset)
+        {
+            if (offset + size > values.Length || rsOffset + size > rs.Length || offset < 0 | size < 0 | rsOffset < 0)
+                throw new ArgumentOutOfRangeException();
+            if (values.Length == offset)
+                return;
+
+            fixed (int* pd = &values[offset])
+            {
+                fixed (ulong* rst = &rs[rsOffset])
+                {
+                    ulong* dst = rst;
+                    uint* pdv = (uint*)pd;
+                    uint i = 0;
+                    for (; i < size / 4 * 4; i += 4)
+                    {
+                        ulong hash1 = *pdv++;
+                        ulong hash2 = *pdv++;
+                        ulong hash3 = *pdv++;
+                        ulong hash4 = *pdv++;
+
+                        hash1 = (hash1 * C1);
+                        hash2 = (hash2 * C1);
+                        hash3 = (hash3 * C1);
+                        hash4 = (hash4 * C1);
+
+                        hash1 ^= ((hash1 << 31) | (hash1 >> 33)) * C2;
+                        hash2 ^= ((hash2 << 31) | (hash2 >> 33)) * C2;
+                        hash3 ^= ((hash3 << 31) | (hash3 >> 33)) * C2;
+                        hash4 ^= ((hash4 << 31) | (hash4 >> 33)) * C2;
+
+                        hash1 = (hash1 ^ (hash1 >> 33)) * 0xff51afd7ed558ccd;
+                        hash2 = (hash2 ^ (hash2 >> 33)) * 0xff51afd7ed558ccd;
+                        hash3 = (hash3 ^ (hash3 >> 33)) * 0xff51afd7ed558ccd;
+                        hash4 = (hash4 ^ (hash4 >> 33)) * 0xff51afd7ed558ccd;
+
+                        hash1 = (hash1 ^ (hash1 >> 33));
+                        hash2 = (hash2 ^ (hash2 >> 33));
+                        hash3 = (hash3 ^ (hash3 >> 33));
+                        hash4 = (hash4 ^ (hash4 >> 33));
+
+                        *(dst + 0) = hash1;
+                        *(dst + 1) = hash2;
+                        *(dst + 2) = hash3;
+                        *(dst + 3) = hash4;
+                        dst += 4;
+                    }
+                    for (; i < size; i++)
+                    {
+                        ulong hash = *pdv++;
+                        hash = (hash * C1);
+                        hash ^= ((hash << 31) | (hash >> 33)) * C2;
+                        hash = (hash ^ (hash >> 33)) * 0xff51afd7ed558ccd;
+                        hash = (hash ^ (hash >> 33));
+                        *dst++ = hash;
+                    }
+                }
+            }
+
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int GetSigma(ulong hash, byte[] mask)
+        {
+            int sigma = 0;
+            ulong pos = ((hash << 14) >> 55);
+            if (pos != 0)
+                sigma += mask[pos];
+            else
+            {
+                sigma = 1;
+                for (int j = 49; j >= 0; --j)
+                {
+                    if (((hash >> j) & 1) == 0)
+                        sigma++;
+                    else
+                        break;
+                }
+            }
+            return sigma;
+        }
+
+        public static int GetSigma(ulong hash)
+        {
+            int sigma = 1;
+            for (int j = 49; j >= 0; --j)
+            {
+                if (((hash >> j) & 1) == 0)
+                    sigma++;
+                else
+                    break;
+            }
+            return sigma;
+        }
+
+        public static byte[] InitMask(int nbit)
+        {
+            byte[] mask = new byte[1 << nbit];
+            for (int v = 0; v < mask.Length; v++)
+            {
+                string s = Convert.ToString(v, 2).PadLeft(nbit, '0');
+                int sigma = 1;
+                for (int i = 0; i < s.Length; i++)
+                {
+                    if (s[i] == '0')
+                        sigma++;
+                    else
+                        break;
+                }
+                mask[v] = (byte)sigma;
+            }
+            return mask;
+        }
 
         /// <summary>
         ///     Gets the appropriate value of alpha_M for the given <paramref name="m" />
@@ -45,7 +166,7 @@ namespace HyperLogLog
         /// </summary>
         /// <param name="bits">Number of bits</param>
         /// <returns></returns>
-        internal static double GetSubAlgorithmSelectionThreshold(int bits)
+        internal static double GetAlgorithm(int bits)
         {
             switch (bits)
             {
