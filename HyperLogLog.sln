@@ -1,17 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.26730.15
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29209.152
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HyperLogLog.Tests", "HyperLogLog.Tests\HyperLogLog.Tests.csproj", "{E9CC1ABD-7079-4ACD-85CA-59447A9A6DC4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HyperLogLog", "HyperLogLog\HyperLogLog.csproj", "{38A7E929-478C-40E5-829D-DFA3A7284317}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HyperLogLog", "HyperLogLog\HyperLogLog.csproj", "{38A7E929-478C-40E5-829D-DFA3A7284317}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HyperLogLog.BenchMark.Tests", "HyperLogLog.BenchMark.Tests\HyperLogLog.BenchMark.Tests.csproj", "{CAFF9960-71F4-476E-A70B-E14D774DB8FB}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HyperLogLog-Net45", "HyperLogLog-Net45\HyperLogLog-Net45.csproj", "{29ED2536-77C8-49A7-98C6-5B7F95A5A674}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HyperLogLog-Net45.BenchMark.Tests", "HyperLogLog-Net45.BenchMark.Tests\HyperLogLog-Net45.BenchMark.Tests.csproj", "{BE93F71B-FD2C-43DC-9D31-CC71B064FB68}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HyperLogLog.BenchMark.Tests", "HyperLogLog.BenchMark.Tests\HyperLogLog.BenchMark.Tests.csproj", "{CAFF9960-71F4-476E-A70B-E14D774DB8FB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -73,38 +69,6 @@ Global
 		{CAFF9960-71F4-476E-A70B-E14D774DB8FB}.Release|x64.Build.0 = Release|Any CPU
 		{CAFF9960-71F4-476E-A70B-E14D774DB8FB}.Release|x86.ActiveCfg = Release|Any CPU
 		{CAFF9960-71F4-476E-A70B-E14D774DB8FB}.Release|x86.Build.0 = Release|Any CPU
-		{29ED2536-77C8-49A7-98C6-5B7F95A5A674}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{29ED2536-77C8-49A7-98C6-5B7F95A5A674}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{29ED2536-77C8-49A7-98C6-5B7F95A5A674}.Debug|ARM.ActiveCfg = Debug|Any CPU
-		{29ED2536-77C8-49A7-98C6-5B7F95A5A674}.Debug|ARM.Build.0 = Debug|Any CPU
-		{29ED2536-77C8-49A7-98C6-5B7F95A5A674}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{29ED2536-77C8-49A7-98C6-5B7F95A5A674}.Debug|x64.Build.0 = Debug|Any CPU
-		{29ED2536-77C8-49A7-98C6-5B7F95A5A674}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{29ED2536-77C8-49A7-98C6-5B7F95A5A674}.Debug|x86.Build.0 = Debug|Any CPU
-		{29ED2536-77C8-49A7-98C6-5B7F95A5A674}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{29ED2536-77C8-49A7-98C6-5B7F95A5A674}.Release|Any CPU.Build.0 = Release|Any CPU
-		{29ED2536-77C8-49A7-98C6-5B7F95A5A674}.Release|ARM.ActiveCfg = Release|Any CPU
-		{29ED2536-77C8-49A7-98C6-5B7F95A5A674}.Release|ARM.Build.0 = Release|Any CPU
-		{29ED2536-77C8-49A7-98C6-5B7F95A5A674}.Release|x64.ActiveCfg = Release|Any CPU
-		{29ED2536-77C8-49A7-98C6-5B7F95A5A674}.Release|x64.Build.0 = Release|Any CPU
-		{29ED2536-77C8-49A7-98C6-5B7F95A5A674}.Release|x86.ActiveCfg = Release|Any CPU
-		{29ED2536-77C8-49A7-98C6-5B7F95A5A674}.Release|x86.Build.0 = Release|Any CPU
-		{BE93F71B-FD2C-43DC-9D31-CC71B064FB68}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{BE93F71B-FD2C-43DC-9D31-CC71B064FB68}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{BE93F71B-FD2C-43DC-9D31-CC71B064FB68}.Debug|ARM.ActiveCfg = Debug|Any CPU
-		{BE93F71B-FD2C-43DC-9D31-CC71B064FB68}.Debug|ARM.Build.0 = Debug|Any CPU
-		{BE93F71B-FD2C-43DC-9D31-CC71B064FB68}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{BE93F71B-FD2C-43DC-9D31-CC71B064FB68}.Debug|x64.Build.0 = Debug|Any CPU
-		{BE93F71B-FD2C-43DC-9D31-CC71B064FB68}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{BE93F71B-FD2C-43DC-9D31-CC71B064FB68}.Debug|x86.Build.0 = Debug|Any CPU
-		{BE93F71B-FD2C-43DC-9D31-CC71B064FB68}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{BE93F71B-FD2C-43DC-9D31-CC71B064FB68}.Release|Any CPU.Build.0 = Release|Any CPU
-		{BE93F71B-FD2C-43DC-9D31-CC71B064FB68}.Release|ARM.ActiveCfg = Release|Any CPU
-		{BE93F71B-FD2C-43DC-9D31-CC71B064FB68}.Release|ARM.Build.0 = Release|Any CPU
-		{BE93F71B-FD2C-43DC-9D31-CC71B064FB68}.Release|x64.ActiveCfg = Release|Any CPU
-		{BE93F71B-FD2C-43DC-9D31-CC71B064FB68}.Release|x64.Build.0 = Release|Any CPU
-		{BE93F71B-FD2C-43DC-9D31-CC71B064FB68}.Release|x86.ActiveCfg = Release|Any CPU
-		{BE93F71B-FD2C-43DC-9D31-CC71B064FB68}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

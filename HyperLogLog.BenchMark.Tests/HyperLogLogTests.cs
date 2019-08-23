@@ -15,17 +15,17 @@ namespace HyperLogLog.Performance.Tests
             //TestCountInt32();
             //TestCountUInt32();
             //TestCountString();
-            //TestCountUInt64();
+            TestCountUInt64();
             //TestCountInt32AsByte();
             //TestCheckSigma();
             //TestBench();
             //TestValidity();
-            TestHash();
+            //TestHash();
         }
 
         private static void TestCountUInt32()
         {
-            IHyperLogLog<uint> estimator = new HyperLogLog();
+            HyperLogLog estimator = new HyperLogLog();
             uint[] array = new uint[10000000];
             for (int i = 0; i < array.Length; i++)
                 array[i] = (uint)i;
@@ -43,7 +43,7 @@ namespace HyperLogLog.Performance.Tests
 
         private static void TestCountInt32()
         {
-            IHyperLogLog<int> estimator = new HyperLogLog();
+            HyperLogLog estimator = new HyperLogLog();
             int[] array = new int[10000000];
             for (int i = 0; i < array.Length; i++)
                 array[i] = i;
@@ -62,8 +62,8 @@ namespace HyperLogLog.Performance.Tests
 
         private static void TestCountUInt64()
         {
-            IHyperLogLog<ulong> estimator = new HyperLogLog();
-            ulong[] array = new ulong[10000000];
+            HyperLogLog estimator = new HyperLogLog();
+            ulong[] array = new ulong[100000000];
             for (int i = 0; i < array.Length; i++)
                 array[i] = (ulong)i;
             Stopwatch w = Stopwatch.StartNew();
@@ -78,7 +78,7 @@ namespace HyperLogLog.Performance.Tests
 
         private static void TestCountString()
         {
-            IHyperLogLog<string> estimator = new HyperLogLog();
+            HyperLogLog estimator = new HyperLogLog();
             Stopwatch w = Stopwatch.StartNew();
             estimator.Add("Alice");
             estimator.Add("Bob");
@@ -95,7 +95,7 @@ namespace HyperLogLog.Performance.Tests
 
         private static void TestCountInt32AsByte()
         {
-            IHyperLogLog<int> estimator = new HyperLogLog();
+            HyperLogLog estimator = new HyperLogLog();
             int[] array = new int[10000000];
             for (int i = 0; i < array.Length; i++)
                 array[i] = i;
@@ -171,7 +171,7 @@ namespace HyperLogLog.Performance.Tests
             Stopwatch w = Stopwatch.StartNew();
             countA = (int)HyperLogLog.Count14(rs, 0, rs.Length);
 
-            IHyperLogLog<int> estimator = new HyperLogLog();
+            HyperLogLog estimator = new HyperLogLog();
             estimator.BulkAdd(array, 0, array.Length);
             countB = (int)estimator.Count();
             

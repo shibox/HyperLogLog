@@ -53,11 +53,5 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\HyperLogLog-Net45\HyperLogLog-Net45.csproj">
-      <Project>{29ed2536-77c8-49a7-98c6-5b7f95a5a674}</Project>
-      <Name>HyperLogLog-Net45</Name>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

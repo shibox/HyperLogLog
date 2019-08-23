@@ -10,9 +10,9 @@ namespace HyperLogLog
     /// <summary>
     /// HyperLogLog的一种高性能实现
     /// </summary>
-    public class HyperLogLog : IHyperLogLog<string>, IHyperLogLog<int>, IHyperLogLog<uint>,
-        IHyperLogLog<long>, IHyperLogLog<ulong>, IHyperLogLog<float>, IHyperLogLog<double>,
-        IHyperLogLog<byte[]>
+    public class HyperLogLog //: IHyperLogLog<string>, IHyperLogLog<int>, IHyperLogLog<uint>,
+        //IHyperLogLog<long>, IHyperLogLog<ulong>, IHyperLogLog<float>, IHyperLogLog<double>,
+        //IHyperLogLog<byte[]>
     {
         #region 字段
 
