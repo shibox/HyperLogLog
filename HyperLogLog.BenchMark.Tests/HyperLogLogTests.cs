@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,10 +16,10 @@ namespace HyperLogLog.Performance.Tests
             //TestCountInt32();
             //TestCountUInt32();
             //TestCountString();
-            TestCountUInt64();
+            //TestCountUInt64();
             //TestCountInt32AsByte();
             //TestCheckSigma();
-            //TestBench();
+            TestBenchmark();
             //TestValidity();
             //TestHash();
         }
@@ -125,30 +126,43 @@ namespace HyperLogLog.Performance.Tests
             }
         }
 
-        private static void TestBench()
+        private static void TestBenchmark()
         {
+            StreamWriter writer = new StreamWriter("result.log");
             int count = 0;
             int[] array = new int[10000000];
             ulong[] rs = new ulong[array.Length];
             Random rd = new Random(Guid.NewGuid().GetHashCode());
-            Dictionary<int, bool> map = new Dictionary<int, bool>(array.Length);
-            for (int i = 0; i < array.Length; i++)
+            for (int n = 0; n < 10000; n++)
             {
-                array[i] = rd.Next();
-                if (map.ContainsKey(array[i]) == false)
-                    map.Add(array[i], true);
+                Dictionary<int, bool> map = new Dictionary<int, bool>(array.Length);
+                for (int i = 0; i < array.Length; i++)
+                {
+                    array[i] = rd.Next();
+                    if (map.ContainsKey(array[i]) == false)
+                        map.Add(array[i], true);
+                }
+                Stopwatch w = Stopwatch.StartNew();
+                Utils.Hash(array, 0, array.Length, rs);
+                string s = $"hash cost:{w.ElapsedMilliseconds.ToString().PadLeft(3, ' ')}";
+                writer.WriteLine(s);
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine(s);
+                w = Stopwatch.StartNew();
+                count = (int)HyperLogLog.Count14(rs, 0, rs.Length);
+                w.Stop();
+
+                s = $"real count:{map.Count.ToString().PadLeft(8, ' ')} estimator count:{count.ToString().PadLeft(8, ' ')}  cost:{w.ElapsedMilliseconds.ToString().PadLeft(3, ' ')}";
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine(s);
+
+                s = $"error rate:{((1.0 - (map.Count / (float)count)) * 100).ToString("f4").PadLeft(7, ' ')}%";
+                Console.ForegroundColor = ConsoleColor.Blue;
+                Console.WriteLine(s);
+
+                if (n % 100 == 0)
+                    writer.Flush();
             }
-                
-            Utils.Hash(array, 0, array.Length, rs);
-            Stopwatch w = Stopwatch.StartNew();
-            //for (int n = 0; n < 100; n++)
-            //{
-            //    HyperLogLog.CountCompute(rs, 0, rs.Length);
-            //}
-            count = (int)HyperLogLog.Count14(rs, 0, rs.Length);
-            w.Stop();
-            Console.WriteLine("real count:" + map.Count + " estimator count:" + count + "    cost:" + w.ElapsedMilliseconds);
-            Console.WriteLine("error rate:" + ((1.0 - (map.Count / (float)count)) * 100).ToString("f4"));
             Console.ReadLine();
 
         }

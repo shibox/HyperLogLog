@@ -935,7 +935,7 @@ namespace HyperLogLog
             int bitsForHll = 50;
             int m = 16384;
             int* mask = stackalloc int[128 * 4];
-            for (int i = 0; i < masks9.Length; i+=0)
+            for (int i = 0; i < masks9.Length; i+=4)
             {
                 mask[i + 0] = masks9[i + 0];
                 mask[i + 1] = masks9[i + 1];
@@ -960,6 +960,7 @@ namespace HyperLogLog
                     //int sigma4 = Utils.GetSigma(hash4, masks9);
 
                     #region sigma
+
                     int sigma1 = 0;
                     int sigma2 = 0;
                     int sigma3 = 0;

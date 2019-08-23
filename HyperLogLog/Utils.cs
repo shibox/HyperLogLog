@@ -8,6 +8,13 @@ namespace HyperLogLog
         private const ulong C1 = 0x87c37b91114253d5UL;
         private const ulong C2 = 0x4cf5ad432745937fUL;
 
+        /// <summary>
+        /// 批量对数据生成哈希
+        /// </summary>
+        /// <param name="values"></param>
+        /// <param name="offset"></param>
+        /// <param name="size"></param>
+        /// <param name="rs"></param>
         public static unsafe void Hash(int[] values, int offset, int size, ulong[] rs)
         {
             Hash(values, offset, size, rs, 0);
