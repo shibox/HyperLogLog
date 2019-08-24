@@ -153,10 +153,12 @@ namespace HyperLogLog.Performance.Tests
                 w.Stop();
 
                 s = $"real count:{map.Count.ToString().PadLeft(8, ' ')} estimator count:{count.ToString().PadLeft(8, ' ')}  cost:{w.ElapsedMilliseconds.ToString().PadLeft(3, ' ')}";
+                writer.WriteLine(s);
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine(s);
 
                 s = $"error rate:{((1.0 - (map.Count / (float)count)) * 100).ToString("f4").PadLeft(7, ' ')}%";
+                writer.WriteLine(s);
                 Console.ForegroundColor = ConsoleColor.Blue;
                 Console.WriteLine(s);
 
