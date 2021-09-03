@@ -19,7 +19,10 @@ namespace HyperLogLog.Performance.Tests
             //TestCountUInt64();
             //TestCountInt32AsByte();
             //TestCheckSigma();
-            TestBenchmark();
+            //TestCheckSigmaBench();
+            //TestBenchmark();
+            //TestBenchmarkOp();
+            TestBenchmarkOpFixed();
             //TestValidity();
             //TestHash();
         }
@@ -112,40 +115,43 @@ namespace HyperLogLog.Performance.Tests
             Console.ReadLine();
         }
 
-        private static void TestCheckSigma()
+        
+
+        private static void TestCheckSigmaBench()
         {
             int[] array = new int[10000000];
             ulong[] rs = new ulong[array.Length];
-            Random rd = new Random(Guid.NewGuid().GetHashCode());
+            var rd = new Random(Guid.NewGuid().GetHashCode());
             for (int n = 0; n < 100; n++)
             {
                 for (int i = 0; i < array.Length; i++)
                     array[i] = rd.Next();
                 Utils.Hash(array, 0, array.Length, rs);
-                CheckSigma(rs, 0, rs.Length);
+                CountSigmaLookup(rs, 0, rs.Length);
+                CountSigmaLeading(rs,0,rs.Length);
             }
         }
 
         private static void TestBenchmark()
         {
-            StreamWriter writer = new StreamWriter("result.log");
+            //StreamWriter writer = new StreamWriter("result.log");
             int count = 0;
             int[] array = new int[10000000];
             ulong[] rs = new ulong[array.Length];
-            Random rd = new Random(Guid.NewGuid().GetHashCode());
+            var rd = new Random(Guid.NewGuid().GetHashCode());
             for (int n = 0; n < 10000; n++)
             {
-                Dictionary<int, bool> map = new Dictionary<int, bool>(array.Length);
+                var map = new Dictionary<int, bool>(array.Length);
                 for (int i = 0; i < array.Length; i++)
                 {
                     array[i] = rd.Next();
                     if (map.ContainsKey(array[i]) == false)
                         map.Add(array[i], true);
                 }
-                Stopwatch w = Stopwatch.StartNew();
+                var w = Stopwatch.StartNew();
                 Utils.Hash(array, 0, array.Length, rs);
                 string s = $"hash cost:{w.ElapsedMilliseconds.ToString().PadLeft(3, ' ')}";
-                writer.WriteLine(s);
+                //writer.WriteLine(s);
                 Console.ForegroundColor = ConsoleColor.Green;
                 Console.WriteLine(s);
                 w = Stopwatch.StartNew();
@@ -153,18 +159,97 @@ namespace HyperLogLog.Performance.Tests
                 w.Stop();
 
                 s = $"real count:{map.Count.ToString().PadLeft(8, ' ')} estimator count:{count.ToString().PadLeft(8, ' ')}  cost:{w.ElapsedMilliseconds.ToString().PadLeft(3, ' ')}";
-                writer.WriteLine(s);
+                //writer.WriteLine(s);
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine(s);
 
                 s = $"error rate:{((1.0 - (map.Count / (float)count)) * 100).ToString("f4").PadLeft(7, ' ')}%";
-                writer.WriteLine(s);
+                //writer.WriteLine(s);
                 Console.ForegroundColor = ConsoleColor.Blue;
                 Console.WriteLine(s);
 
-                if (n % 100 == 0)
-                    writer.Flush();
+                //if (n % 100 == 0)
+                //    writer.Flush();
             }
+            Console.ReadLine();
+
+        }
+
+        private static void TestBenchmarkOp()
+        {
+            int count = 0;
+            //int[] array = new int[10000000];
+            ulong[] rs = new ulong[10000000];
+            var rd = new Random(Guid.NewGuid().GetHashCode());
+            for (int n = 0; n < 10; n++)
+            {
+                var w = Stopwatch.StartNew();
+                byte[] bytes = new byte[10000 * 8];
+                for (int i = 0; i < rs.Length; i+=10000)
+                {
+                    rd.NextBytes(bytes);
+                    Buffer.BlockCopy(bytes, 0, rs, i * 8, bytes.Length);
+                }
+                string s = $"hash cost:{w.ElapsedMilliseconds.ToString().PadLeft(3, ' ')}";
+                //writer.WriteLine(s);
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine(s);
+                w = Stopwatch.StartNew();
+                count = (int)HyperLogLog.Count14Op(rs, 0, rs.Length);
+                w.Stop();
+
+                s = $"real count:{rs.Length.ToString().PadLeft(8, ' ')} estimator count:{count.ToString().PadLeft(8, ' ')}  cost:{w.ElapsedMilliseconds.ToString().PadLeft(3, ' ')}";
+                //writer.WriteLine(s);
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine(s);
+
+                s = $"error rate:{((1.0 - (rs.Length / (float)count)) * 100).ToString("f4").PadLeft(7, ' ')}%";
+                //writer.WriteLine(s);
+                Console.ForegroundColor = ConsoleColor.Blue;
+                Console.WriteLine(s);
+
+                //if (n % 100 == 0)
+                //    writer.Flush();
+            }
+            Console.ReadLine();
+
+        }
+
+        private static void TestBenchmarkOpFixed()
+        {
+            int count = 0;
+            int tcost = 0;
+            ulong[] rs = new ulong[100000000];
+            //var rd = new Random(Guid.NewGuid().GetHashCode());
+            var w = Stopwatch.StartNew();
+            byte[] bytes = new byte[10000 * 8];
+            for (int i = 0; i < rs.Length; i += 10000)
+            {
+                Random.Shared.NextBytes(bytes);
+                Buffer.BlockCopy(bytes, 0, rs, i * 8, bytes.Length);
+            }
+            string s = $"hash cost:{w.ElapsedMilliseconds.ToString().PadLeft(3, ' ')}";
+
+            for (int n = 0; n < 100; n++)
+            {
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine(s);
+                w = Stopwatch.StartNew();
+                count = (int)HyperLogLog.Count14Op(rs, 0, rs.Length);
+                w.Stop();
+                tcost += (int)w.ElapsedMilliseconds;
+
+                s = $"real count:{rs.Length.ToString().PadLeft(8, ' ')} estimator count:{count.ToString().PadLeft(8, ' ')}  cost:{w.ElapsedMilliseconds.ToString().PadLeft(3, ' ')}";
+                //writer.WriteLine(s);
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine(s);
+
+                s = $"error rate:{((1.0 - (rs.Length / (float)count)) * 100).ToString("f4").PadLeft(7, ' ')}%";
+                //writer.WriteLine(s);
+                Console.ForegroundColor = ConsoleColor.Blue;
+                Console.WriteLine(s);
+            }
+            Console.WriteLine($"tcost:{tcost}");
             Console.ReadLine();
 
         }
@@ -224,20 +309,33 @@ namespace HyperLogLog.Performance.Tests
             }
         }
 
-        public static void CheckSigma(ulong[] values, int offset, int size)
+        
+
+        public static void CountSigmaLookup(ulong[] values, int offset, int size)
         {
-            int error = 0;
+            long v = 0;
             byte[] mask = Utils.InitMask(9);
+            var w = Stopwatch.StartNew();
             for (uint i = 0; i < size; i++)
             {
-                ulong hash = values[i+offset];
-                int sigmaA = Utils.GetSigma(hash, mask);
-                int sigmaB = Utils.GetSigma(hash);
-                if (sigmaA != sigmaB)
-                    error++;
+                ulong hash = values[i + offset];
+                v += Utils.GetSigma(hash, mask);
             }
-            Console.WriteLine($"error:{error}");
+            Console.WriteLine($"CountSigmaLookup value:{v},cost:{w.ElapsedMilliseconds}");
         }
+
+        public static void CountSigmaLeading(ulong[] values, int offset, int size)
+        {
+            long v = 0;
+            var w = Stopwatch.StartNew();
+            for (uint i = 0; i < size; i++)
+            {
+                ulong hash = values[i + offset];
+                v += Utils.GetSigmaLeading(hash);
+            }
+            Console.WriteLine($"CountSigmaLeading value:{v},cost:{w.ElapsedMilliseconds}");
+        }
+
 
     }
 }

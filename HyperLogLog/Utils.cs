@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace HyperLogLog
@@ -115,6 +116,12 @@ namespace HyperLogLog
             return sigma;
         }
 
+
+        public static int GetSigmaLeading(ulong hash)
+        {
+            return 1 + BitOperations.LeadingZeroCount(hash << 14);
+        }
+
         /// <summary>
         /// 分支判断的数量统计，当n取9时，99%的数据可以通过直接查表获得，极大的提升了性能
         /// 51 1 0.0000
@@ -148,11 +155,11 @@ namespace HyperLogLog
         /// <returns></returns>
         public static byte[] InitMask(int nbit)
         {
-            byte[] mask = new byte[1 << nbit];
+            var mask = new byte[1 << nbit];
             for (int v = 0; v < mask.Length; v++)
             {
-                string s = Convert.ToString(v, 2).PadLeft(nbit, '0');
-                int sigma = 1;
+                var s = Convert.ToString(v, 2).PadLeft(nbit, '0');
+                var sigma = 1;
                 for (int i = 0; i < s.Length; i++)
                 {
                     if (s[i] == '0')
