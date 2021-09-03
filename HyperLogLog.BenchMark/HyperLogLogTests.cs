@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+﻿
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HyperLogLog.Performance.Tests
+namespace HyperLogLog.BenchMark
 {
     public class HyperLogLogTests
     {
@@ -304,7 +304,7 @@ namespace HyperLogLog.Performance.Tests
                 for (int n = 0; n < array.Length; n++)
                     array[n] = rd.Next();
                 Utils.Hash(array, 0, array.Length, rs);
-                Console.WriteLine(JsonConvert.SerializeObject(rs));
+                //Console.WriteLine(JsonConvert.SerializeObject(rs));
                 
             }
         }
