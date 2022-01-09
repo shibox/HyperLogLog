@@ -3,5 +3,6 @@
 using BenchmarkDotNet.Running;
 using HyperLogLog.BenchMark;
 
-HyperLogLogTests.Run();
-var summary = BenchmarkRunner.Run<HyperLogLogBench>();
+//HyperLogLogTests.Run();
+//var summary = BenchmarkRunner.Run<GetSigmaBench>();
+var summary = BenchmarkRunner.Run<Count14Bench>();

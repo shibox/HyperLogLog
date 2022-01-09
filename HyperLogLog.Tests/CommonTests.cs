@@ -1,6 +1,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace HyperLogLog.Tests
 {
@@ -35,30 +36,30 @@ namespace HyperLogLog.Tests
         //    Assert.AreEqual(51, HyperLogLog.GetSigma((ulong)(Math.Pow(2, bitsToCount + 1)), bitsToCount));
         //}
 
+        /// <summary>
+        /// 验证多种GetSigma实现的正确性
+        /// </summary>
         [TestMethod]
-        public void TestCheckSigma()
+        public void CheckSigmaTest()
         {
-            var array = new int[10_000_000];
-            var rs = new ulong[array.Length];
-            var rd = new Random();
-            for (int n = 0; n < 0; n++)
+            var bytes = new byte[80_000_000];
+            for (int n = 0; n < 10; n++)
             {
-                for (int i = 0; i < array.Length; i++)
-                    array[i] = rd.Next();
-                Utils.Hash(array, 0, array.Length, rs);
-                CheckSigma(rs, 0, rs.Length);
+                Random.Shared.NextBytes(bytes);
+                var rs = MemoryMarshal.Cast<byte, ulong>(new Span<byte>(bytes));
+                CheckSigma(rs);
             }
         }
         
-        private static void CheckSigma(ulong[] values, int offset, int size)
+        private static void CheckSigma(Span<ulong> values)
         {
             int error = 0;
             byte[] mask = Utils.InitMask(9);
-            for (uint i = 0; i < size; i++)
+            for (int i = 0; i < values.Length; i++)
             {
-                ulong hash = values[i + offset];
-                int sigmaA = Utils.GetSigma(hash, mask);
-                int sigmaB = Utils.GetSigma(hash);
+                ulong hash = values[i];
+                int sigmaA = Utils.GetSigmaLookup(hash, mask);
+                int sigmaB = Utils.GetSigmaCommon(hash);
                 int sigmaC = Utils.GetSigmaLeading(hash);
                 if (sigmaA != sigmaB || sigmaA != sigmaC)
                     error++;

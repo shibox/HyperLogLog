@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics.X86;
 
 namespace HyperLogLog
 {
@@ -27,7 +28,6 @@ namespace HyperLogLog
                 throw new ArgumentOutOfRangeException();
             if (values.Length == offset)
                 return;
-
             fixed (int* pd = &values[offset])
             {
                 fixed (ulong* rst = &rs[rsOffset])
@@ -42,10 +42,10 @@ namespace HyperLogLog
                         ulong hash3 = *pdv++;
                         ulong hash4 = *pdv++;
 
-                        hash1 = (hash1 * C1);
-                        hash2 = (hash2 * C1);
-                        hash3 = (hash3 * C1);
-                        hash4 = (hash4 * C1);
+                        hash1 *= C1;
+                        hash2 *= C1;
+                        hash3 *= C1;
+                        hash4 *= C1;
 
                         hash1 ^= ((hash1 << 31) | (hash1 >> 33)) * C2;
                         hash2 ^= ((hash2 << 31) | (hash2 >> 33)) * C2;
@@ -57,10 +57,10 @@ namespace HyperLogLog
                         hash3 = (hash3 ^ (hash3 >> 33)) * 0xff51afd7ed558ccd;
                         hash4 = (hash4 ^ (hash4 >> 33)) * 0xff51afd7ed558ccd;
 
-                        hash1 = (hash1 ^ (hash1 >> 33));
-                        hash2 = (hash2 ^ (hash2 >> 33));
-                        hash3 = (hash3 ^ (hash3 >> 33));
-                        hash4 = (hash4 ^ (hash4 >> 33));
+                        hash1 ^= (hash1 >> 33);
+                        hash2 ^= (hash2 >> 33);
+                        hash3 ^= (hash3 >> 33);
+                        hash4 ^= (hash4 >> 33);
 
                         *(dst + 0) = hash1;
                         *(dst + 1) = hash2;
@@ -71,19 +71,18 @@ namespace HyperLogLog
                     for (; i < size; i++)
                     {
                         ulong hash = *pdv++;
-                        hash = (hash * C1);
+                        hash *= C1;
                         hash ^= ((hash << 31) | (hash >> 33)) * C2;
                         hash = (hash ^ (hash >> 33)) * 0xff51afd7ed558ccd;
-                        hash = (hash ^ (hash >> 33));
+                        hash ^= (hash >> 33);
                         *dst++ = hash;
                     }
                 }
             }
-
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int GetSigma(ulong hash, byte[] mask)
+        public static int GetSigmaLookup(ulong hash, byte[] mask)
         {
             int sigma = 0;
             ulong pos = ((hash << 14) >> 55);
@@ -103,7 +102,8 @@ namespace HyperLogLog
             return sigma;
         }
 
-        public static int GetSigma(ulong hash)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int GetSigmaCommon(ulong hash)
         {
             int sigma = 1;
             for (int j = 49; j >= 0; --j)
@@ -116,10 +116,10 @@ namespace HyperLogLog
             return sigma;
         }
 
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetSigmaLeading(ulong hash)
         {
-            return 1 + BitOperations.LeadingZeroCount(hash << 14);
+            return 1 + (int)Lzcnt.X64.LeadingZeroCount(hash << 14);
         }
 
         /// <summary>
@@ -247,6 +247,35 @@ namespace HyperLogLog
                     return 350000;
             }
             throw new ArgumentOutOfRangeException("bits", "Unexpected number of bits (should never happen)");
+        }
+
+        internal unsafe static ulong Count(byte* look, int m = 16384, int bitsPerIndex = 14)
+        {
+            double alpha = GetAlphaM(m);
+            double alg = GetAlgorithm(bitsPerIndex);
+
+            double zInverse = 0;
+            double v = 0;
+            for (var i = 0; i < m; i++)
+            {
+                byte sigma = look[i];
+                zInverse += Math.Pow(2, -sigma);
+                if (sigma == 0)
+                    v++;
+            }
+            double e = alpha * m * m / zInverse;
+            if (e <= 5.0 * m)
+                e = BiasCorrection.CorrectBias(e, bitsPerIndex);
+
+            double h;
+            if (v > 0)
+                h = m * Math.Log(m / v);
+            else
+                h = e;
+
+            if (h <= alg)
+                return (ulong)Math.Round(h);
+            return (ulong)Math.Round(e);
         }
 
     }

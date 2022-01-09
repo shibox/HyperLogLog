@@ -7,15 +7,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics.X86;
 using System.Text;
 using System.Runtime.Intrinsics;
+using System.Runtime.InteropServices;
 
 namespace HyperLogLog
 {
     /// <summary>
     /// HyperLogLog的一种高性能实现
     /// </summary>
-    public class HyperLogLog //: IHyperLogLog<string>, IHyperLogLog<int>, IHyperLogLog<uint>,
-        //IHyperLogLog<long>, IHyperLogLog<ulong>, IHyperLogLog<float>, IHyperLogLog<double>,
-        //IHyperLogLog<byte[]>
+    public class HyperLogLog
     {
         #region 字段
 
@@ -938,128 +937,118 @@ namespace HyperLogLog
 
         #region 静态方法
 
-        public static unsafe ulong Count14(ulong* values, int size)
+        /// <summary>
+        /// 估算不重复数据的数量，占用内存16K（2^14）
+        /// 一亿数量的计算平均70毫秒，误差率大约0.7%
+        /// </summary>
+        /// <param name="values"></param>
+        /// <returns></returns>
+        public static unsafe ulong Count14(Span<ulong> values)
         {
-            int bitsForHll = 50;
+            const int bitsForHll = 50;
             int m = 16384;
-            byte* mask = stackalloc byte[128 * 4];
-            for (int i = 0; i < masks9.Length; i += 4)
+            var look = stackalloc byte[m];
+            fixed (ulong* pd = values)
             {
-                mask[i + 0] = masks9[i + 0];
-                mask[i + 1] = masks9[i + 1];
-                mask[i + 2] = masks9[i + 2];
-                mask[i + 3] = masks9[i + 3];
+                ulong* ptr = pd;
+                int i = 0;
+                for (; i < (values.Length & ~3); i += 4)
+                {
+                    ulong hash1 = *(ptr + 0);
+                    ulong hash2 = *(ptr + 1);
+                    ulong hash3 = *(ptr + 2);
+                    ulong hash4 = *(ptr + 3);
+                    ptr += 4;
+
+                    ulong sigma1 = 1 + Lzcnt.X64.LeadingZeroCount(hash1 << 14);
+                    ulong sigma2 = 1 + Lzcnt.X64.LeadingZeroCount(hash2 << 14);
+                    ulong sigma3 = 1 + Lzcnt.X64.LeadingZeroCount(hash3 << 14);
+                    ulong sigma4 = 1 + Lzcnt.X64.LeadingZeroCount(hash4 << 14);
+
+                    hash1 >>= bitsForHll;
+                    hash2 >>= bitsForHll;
+                    hash3 >>= bitsForHll;
+                    hash4 >>= bitsForHll;
+
+                    if (look[hash1] < sigma1)
+                        look[hash1] = (byte)sigma1;
+                    if (look[hash2] < sigma2)
+                        look[hash2] = (byte)sigma2;
+                    if (look[hash3] < sigma3)
+                        look[hash3] = (byte)sigma3;
+                    if (look[hash4] < sigma4)
+                        look[hash4] = (byte)sigma4;
+                }
+                while (i < values.Length)
+                {
+                    var hash = *ptr;
+                    ulong sigma = 1 + Lzcnt.X64.LeadingZeroCount(hash << 14);
+                    hash >>= bitsForHll;
+                    if (look[hash] < sigma)
+                        look[hash] = (byte)sigma;
+                }
             }
-
-            byte* lookd = stackalloc byte[m];
-            ulong* pdv = values;
-            for (uint i = 0; i < size; i += 4)
-            {
-                ulong hash1 = *pdv++;
-                ulong hash2 = *pdv++;
-                ulong hash3 = *pdv++;
-                ulong hash4 = *pdv++;
-
-                //int sigma1 = Utils.GetSigma(hash1, masks9);
-                //int sigma2 = Utils.GetSigma(hash2, masks9);
-                //int sigma3 = Utils.GetSigma(hash3, masks9);
-                //int sigma4 = Utils.GetSigma(hash4, masks9);
-
-                #region sigma
-
-                int sigma1 = 0;
-                int sigma2 = 0;
-                int sigma3 = 0;
-                int sigma4 = 0;
-                ulong pos = ((hash1 << 14) >> 55);
-                if (pos != 0)
-                    sigma1 += mask[pos];
-                else
-                {
-                    sigma1 = 1;
-                    for (int j = 49; j >= 0; --j)
-                    {
-                        if (((hash1 >> j) & 1) == 0)
-                            sigma1++;
-                        else
-                            break;
-                    }
-                }
-                pos = ((hash2 << 14) >> 55);
-                if (pos != 0)
-                    sigma2 += mask[pos];
-                else
-                {
-                    sigma2 = 1;
-                    for (int j = 49; j >= 0; --j)
-                    {
-                        if (((hash2 >> j) & 1) == 0)
-                            sigma2++;
-                        else
-                            break;
-                    }
-                }
-
-                pos = ((hash3 << 14) >> 55);
-                if (pos != 0)
-                    sigma3 += mask[pos];
-                else
-                {
-                    sigma3 = 1;
-                    for (int j = 49; j >= 0; --j)
-                    {
-                        if (((hash3 >> j) & 1) == 0)
-                            sigma3++;
-                        else
-                            break;
-                    }
-                }
-
-                pos = ((hash4 << 14) >> 55);
-                if (pos != 0)
-                    sigma4 += mask[pos];
-                else
-                {
-                    sigma4 = 1;
-                    for (int j = 49; j >= 0; --j)
-                    {
-                        if (((hash4 >> j) & 1) == 0)
-                            sigma4++;
-                        else
-                            break;
-                    }
-                }
-                #endregion
-
-                hash1 = (hash1 >> bitsForHll);
-                hash2 = (hash2 >> bitsForHll);
-                hash3 = (hash3 >> bitsForHll);
-                hash4 = (hash4 >> bitsForHll);
-
-                if (lookd[hash1] < sigma1)
-                    lookd[hash1] = (byte)sigma1;
-                if (lookd[hash2] < sigma2)
-                    lookd[hash2] = (byte)sigma2;
-                if (lookd[hash3] < sigma3)
-                    lookd[hash3] = (byte)sigma3;
-                if (lookd[hash4] < sigma4)
-                    lookd[hash4] = (byte)sigma4;
-            }
-            return Count(lookd);
+            return Utils.Count(look);
         }
 
-        public static unsafe ulong Count14(ulong[] values, int offset, int size)
+        [Obsolete("仅供研究对比测试用，已废弃，请使用Count14")]
+        public static unsafe ulong Count14UseCommon(Span<ulong> values)
+        {
+            const int bitsForHll = 50;
+            const int m = 16384;
+            var mask = stackalloc byte[128 * 4];
+            for (int i = 0; i < masks9.Length; i += 4)
+            {
+                mask[i + 0] = masks9[i + 0];
+                mask[i + 1] = masks9[i + 1];
+                mask[i + 2] = masks9[i + 2];
+                mask[i + 3] = masks9[i + 3];
+            }
+
+            var look = stackalloc byte[m];
+            fixed (ulong* pd = values)
+            {
+                ulong* ptr = pd;
+                for (uint i = 0; i < values.Length; i += 4)
+                {
+                    ulong hash1 = *ptr++;
+                    ulong hash2 = *ptr++;
+                    ulong hash3 = *ptr++;
+                    ulong hash4 = *ptr++;
+
+                    int sigma1 = Utils.GetSigmaCommon(hash1);
+                    int sigma2 = Utils.GetSigmaCommon(hash2);
+                    int sigma3 = Utils.GetSigmaCommon(hash3);
+                    int sigma4 = Utils.GetSigmaCommon(hash4);
+
+                    hash1 >>= bitsForHll;
+                    hash2 >>= bitsForHll;
+                    hash3 >>= bitsForHll;
+                    hash4 >>= bitsForHll;
+
+                    if (look[hash1] < sigma1)
+                        look[hash1] = (byte)sigma1;
+                    if (look[hash2] < sigma2)
+                        look[hash2] = (byte)sigma2;
+                    if (look[hash3] < sigma3)
+                        look[hash3] = (byte)sigma3;
+                    if (look[hash4] < sigma4)
+                        look[hash4] = (byte)sigma4;
+                }
+            }
+            return Utils.Count(look);
+        }
+
+        /// <summary>
+        /// 平均102毫秒
+        /// </summary>
+        /// <param name="values"></param>
+        /// <returns></returns>
+        [Obsolete("仅供研究对比测试用，已废弃，请使用Count14")]
+        public static unsafe ulong Count14UseLookup(Span<ulong> values)
         {
             int bitsForHll = 50;
             int m = 16384;
-            //int* mask = stackalloc int[128 * 4];
-            //for (int i = 0; i < masks9.Length; i+=4)
-            //{
-            //    mask[i + 0] = masks9[i + 0];
-            //    mask[i + 1] = masks9[i + 1];
-            //    mask[i + 2] = masks9[i + 2];
-            //    mask[i + 3] = masks9[i + 3];
-            //}
             byte* mask = stackalloc byte[128 * 4];
             for (int i = 0; i < masks9.Length; i += 4)
             {
@@ -1069,21 +1058,16 @@ namespace HyperLogLog
                 mask[i + 3] = masks9[i + 3];
             }
 
-            byte* lookd = stackalloc byte[m];
-            fixed (ulong* pd = &values[offset])
+            var look = stackalloc byte[m];
+            fixed (ulong* pd = values)
             {
-                ulong* pdv = (ulong*)pd;
-                for (uint i = 0; i < size; i += 4)
+                ulong* ptr = pd;
+                for (uint i = 0; i < values.Length; i += 4)
                 {
-                    ulong hash1 = *pdv++;
-                    ulong hash2 = *pdv++;
-                    ulong hash3 = *pdv++;
-                    ulong hash4 = *pdv++;
-
-                    //int sigma1 = Utils.GetSigma(hash1, masks9);
-                    //int sigma2 = Utils.GetSigma(hash2, masks9);
-                    //int sigma3 = Utils.GetSigma(hash3, masks9);
-                    //int sigma4 = Utils.GetSigma(hash4, masks9);
+                    ulong hash1 = *ptr++;
+                    ulong hash2 = *ptr++;
+                    ulong hash3 = *ptr++;
+                    ulong hash4 = *ptr++;
 
                     #region sigma
 
@@ -1149,6 +1133,7 @@ namespace HyperLogLog
                                 break;
                         }
                     }
+
                     #endregion
 
                     hash1 >>= bitsForHll;
@@ -1156,76 +1141,45 @@ namespace HyperLogLog
                     hash3 >>= bitsForHll;
                     hash4 >>= bitsForHll;
 
-                    if (lookd[hash1] < sigma1)
-                        lookd[hash1] = (byte)sigma1;
-                    if (lookd[hash2] < sigma2)
-                        lookd[hash2] = (byte)sigma2;
-                    if (lookd[hash3] < sigma3)
-                        lookd[hash3] = (byte)sigma3;
-                    if (lookd[hash4] < sigma4)
-                        lookd[hash4] = (byte)sigma4;
+                    if (look[hash1] < sigma1)
+                        look[hash1] = (byte)sigma1;
+                    if (look[hash2] < sigma2)
+                        look[hash2] = (byte)sigma2;
+                    if (look[hash3] < sigma3)
+                        look[hash3] = (byte)sigma3;
+                    if (look[hash4] < sigma4)
+                        look[hash4] = (byte)sigma4;
                 }
             }
-            return Count(lookd);
+            return Utils.Count(look);
         }
 
-        public static unsafe ulong Count14Op(ulong[] values, int offset, int size)
+        /// <summary>
+        /// 平均94毫秒
+        /// </summary>
+        /// <param name="values"></param>
+        /// <returns></returns>
+
+        [Obsolete("仅供研究对比测试用，已废弃，请使用Count14")]
+        public static unsafe ulong Count14UseSimd(Span<ulong> values)
         {
-            int bitsForHll = 50;
-            int m = 16384;
-            byte* lookd = stackalloc byte[m];
-            fixed (ulong* pd = &values[offset])
-            {
-                ulong* pdv = (ulong*)pd;
-                for (uint i = 0; i < size; i += 4)
-                {
-                    ulong hash1 = *(pdv + 0);
-                    ulong hash2 = *(pdv + 1);
-                    ulong hash3 = *(pdv + 2);
-                    ulong hash4 = *(pdv + 3);
-                    pdv += 4;
-
-                    int sigma1 = 1 + BitOperations.LeadingZeroCount(hash1 << 14);
-                    int sigma2 = 1 + BitOperations.LeadingZeroCount(hash2 << 14);
-                    int sigma3 = 1 + BitOperations.LeadingZeroCount(hash3 << 14);
-                    int sigma4 = 1 + BitOperations.LeadingZeroCount(hash4 << 14);
-
-                    hash1 >>= bitsForHll;
-                    hash2 >>= bitsForHll;
-                    hash3 >>= bitsForHll;
-                    hash4 >>= bitsForHll;
-
-                    if (lookd[hash1] < sigma1)
-                        lookd[hash1] = (byte)sigma1;
-                    if (lookd[hash2] < sigma2)
-                        lookd[hash2] = (byte)sigma2;
-                    if (lookd[hash3] < sigma3)
-                        lookd[hash3] = (byte)sigma3;
-                    if (lookd[hash4] < sigma4)
-                        lookd[hash4] = (byte)sigma4;
-                }
-            }
-            return Count(lookd);
-        }
-
-        public static unsafe ulong Count14Op2(ulong[] values, int offset, int size)
-        {
+            const int bitsForHll = 50;
             int m = 16384;
             byte* lookd = stackalloc byte[m];
             ulong* buf = stackalloc ulong[4];
-            fixed (ulong* pd = &values[offset])
+            fixed (ulong* pd = values)
             {
-                ulong* pdv = (ulong*)pd;
-                for (uint i = 0; i < size; i += 4)
+                ulong* ptr = pd;
+                for (uint i = 0; i < values.Length; i += 4)
                 {
-                    var hash = Avx2.LoadVector256(pdv);
+                    var hash = Avx2.LoadVector256(ptr);
                     var hash_left = Avx2.ShiftLeftLogical(hash, 14);
-                    var hash_right = Avx2.ShiftRightLogical(hash, 50);
                     Avx2.Store(buf, hash_left);
-                    int sigma1 = 1 + BitOperations.LeadingZeroCount(*(buf + 0));
-                    int sigma2 = 1 + BitOperations.LeadingZeroCount(*(buf + 1));
-                    int sigma3 = 1 + BitOperations.LeadingZeroCount(*(buf + 2));
-                    int sigma4 = 1 + BitOperations.LeadingZeroCount(*(buf + 3));
+                    ulong sigma1 = 1 + Lzcnt.X64.LeadingZeroCount(*(buf + 0));
+                    ulong sigma2 = 1 + Lzcnt.X64.LeadingZeroCount(*(buf + 1));
+                    ulong sigma3 = 1 + Lzcnt.X64.LeadingZeroCount(*(buf + 2));
+                    ulong sigma4 = 1 + Lzcnt.X64.LeadingZeroCount(*(buf + 3));
+                    var hash_right = Avx2.ShiftRightLogical(hash, bitsForHll);
                     Avx2.Store(buf, hash_right);
                     if (lookd[*(buf + 0)] < sigma1)
                         lookd[*(buf + 0)] = (byte)sigma1;
@@ -1235,26 +1189,13 @@ namespace HyperLogLog
                         lookd[*(buf + 2)] = (byte)sigma3;
                     if (lookd[*(buf + 3)] < sigma4)
                         lookd[*(buf + 3)] = (byte)sigma4;
-                    pdv += 4;
-                    //int sigma1 = 1 + BitOperations.LeadingZeroCount(hash_left.GetElement(0));
-                    //int sigma2 = 1 + BitOperations.LeadingZeroCount(hash_left.GetElement(1));
-                    //int sigma3 = 1 + BitOperations.LeadingZeroCount(hash_left.GetElement(2));
-                    //int sigma4 = 1 + BitOperations.LeadingZeroCount(hash_left.GetElement(3));
-                    //if (lookd[hash_right.GetElement(0)] < sigma1)
-                    //    lookd[hash_right.GetElement(0)] = (byte)sigma1;
-                    //if (lookd[hash_right.GetElement(1)] < sigma2)
-                    //    lookd[hash_right.GetElement(1)] = (byte)sigma2;
-                    //if (lookd[hash_right.GetElement(2)] < sigma3)
-                    //    lookd[hash_right.GetElement(2)] = (byte)sigma3;
-                    //if (lookd[hash_right.GetElement(3)] < sigma4)
-                    //    lookd[hash_right.GetElement(3)] = (byte)sigma4;
-                    //pdv += 4;
+                    ptr += 4;
                 }
             }
-            return Count(lookd);
+            return Utils.Count(lookd);
         }
 
-        public static unsafe ulong Count14(int[] values, int offset, int size)
+        public static unsafe ulong HashAndCount14(int[] values, int offset, int size)
         {
             ulong n = 0;
             int bitsForHll = 50;
@@ -1272,11 +1213,12 @@ namespace HyperLogLog
                     ulong hash2 = *pdv++;
                     ulong hash3 = *pdv++;
                     ulong hash4 = *pdv++;
+                    pdv += 4;
 
-                    hash1 = (hash1 * C1);
-                    hash2 = (hash2 * C1);
-                    hash3 = (hash3 * C1);
-                    hash4 = (hash4 * C1);
+                    hash1 *= C1;
+                    hash2 *= C1;
+                    hash3 *= C1;
+                    hash4 *= C1;
 
                     hash1 ^= ((hash1 << 31) | (hash1 >> 33)) * C2;
                     hash2 ^= ((hash2 << 31) | (hash2 >> 33)) * C2;
@@ -1288,80 +1230,20 @@ namespace HyperLogLog
                     hash3 = (hash3 ^ (hash3 >> 33)) * 0xff51afd7ed558ccd;
                     hash4 = (hash4 ^ (hash4 >> 33)) * 0xff51afd7ed558ccd;
 
-                    hash1 = (hash1 ^ (hash1 >> 33));
-                    hash2 = (hash2 ^ (hash2 >> 33));
-                    hash3 = (hash3 ^ (hash3 >> 33));
-                    hash4 = (hash4 ^ (hash4 >> 33));
+                    hash1 ^= (hash1 >> 33);
+                    hash2 ^= (hash2 >> 33);
+                    hash3 ^= (hash3 >> 33);
+                    hash4 ^= (hash4 >> 33);
 
-                    #region sigma
-                    int sigma1 = 0;
-                    int sigma2 = 0;
-                    int sigma3 = 0;
-                    int sigma4 = 0;
-                    ulong pos = ((hash1 << 14) >> 55);
-                    if (pos != 0)
-                        sigma1 += mask[pos];
-                    else
-                    {
-                        sigma1 = 1;
-                        for (int j = 49; j >= 0; --j)
-                        {
-                            if (((hash1 >> j) & 1) == 0)
-                                sigma1++;
-                            else
-                                break;
-                        }
-                    }
-                    pos = ((hash2 << 14) >> 55);
-                    if (pos != 0)
-                        sigma2 += mask[pos];
-                    else
-                    {
-                        sigma2 = 1;
-                        for (int j = 49; j >= 0; --j)
-                        {
-                            if (((hash2 >> j) & 1) == 0)
-                                sigma2++;
-                            else
-                                break;
-                        }
-                    }
+                    ulong sigma1 = 1 + Lzcnt.X64.LeadingZeroCount(hash1 << 14);
+                    ulong sigma2 = 1 + Lzcnt.X64.LeadingZeroCount(hash2 << 14);
+                    ulong sigma3 = 1 + Lzcnt.X64.LeadingZeroCount(hash3 << 14);
+                    ulong sigma4 = 1 + Lzcnt.X64.LeadingZeroCount(hash4 << 14);
 
-                    pos = ((hash3 << 14) >> 55);
-                    if (pos != 0)
-                        sigma3 += mask[pos];
-                    else
-                    {
-                        sigma3 = 1;
-                        for (int j = 49; j >= 0; --j)
-                        {
-                            if (((hash3 >> j) & 1) == 0)
-                                sigma3++;
-                            else
-                                break;
-                        }
-                    }
-
-                    pos = ((hash4 << 14) >> 55);
-                    if (pos != 0)
-                        sigma4 += mask[pos];
-                    else
-                    {
-                        sigma4 = 1;
-                        for (int j = 49; j >= 0; --j)
-                        {
-                            if (((hash4 >> j) & 1) == 0)
-                                sigma4++;
-                            else
-                                break;
-                        }
-                    }
-                    #endregion
-
-                    hash1 = (hash1 >> bitsForHll);
-                    hash2 = (hash2 >> bitsForHll);
-                    hash3 = (hash3 >> bitsForHll);
-                    hash4 = (hash4 >> bitsForHll);
+                    hash1 >>= bitsForHll;
+                    hash2 >>= bitsForHll;
+                    hash3 >>= bitsForHll;
+                    hash4 >>= bitsForHll;
 
                     if (lookd[hash1] < sigma1)
                         lookd[hash1] = (byte)sigma1;
@@ -1375,35 +1257,6 @@ namespace HyperLogLog
             }
             return n;
 
-        }
-
-        private unsafe static ulong Count(byte* lookd, int m = 16384, int bitsPerIndex = 14)
-        {
-            double alpha = Utils.GetAlphaM(m);
-            double alg = Utils.GetAlgorithm(bitsPerIndex);
-
-            double zInverse = 0;
-            double v = 0;
-            for (var i = 0; i < m; i++)
-            {
-                byte sigma = lookd[i];
-                zInverse += Math.Pow(2, -sigma);
-                if (sigma == 0)
-                    v++;
-            }
-            double e = alpha * m * m / zInverse;
-            if (e <= 5.0 * m)
-                e = BiasCorrection.CorrectBias(e, bitsPerIndex);
-
-            double h;
-            if (v > 0)
-                h = m * Math.Log(m / v);
-            else
-                h = e;
-
-            if (h <= alg)
-                return (ulong)Math.Round(h);
-            return (ulong)Math.Round(e);
         }
 
         #endregion
