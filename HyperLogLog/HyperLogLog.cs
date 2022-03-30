@@ -809,10 +809,10 @@ namespace HyperLogLog
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void HashCode(ulong hash)
         {
-            hash = (hash * C1);
+            hash *= C1;
             hash ^= ((hash << 31) | (hash >> 33)) * C2;
             hash = (hash ^ (hash >> 33)) * 0xff51afd7ed558ccd;
-            hash = (hash ^ (hash >> 33));
+            hash ^= (hash >> 33);
             Insert(hash);
         }
 
@@ -882,8 +882,7 @@ namespace HyperLogLog
 
             if (isSparse)
             {
-                byte prevRank;
-                lookupSparse.TryGetValue(sub, out prevRank);
+                lookupSparse.TryGetValue(sub, out byte prevRank);
                 lookupSparse[sub] = Math.Max(prevRank, sigma);
                 if (lookupSparse.Count > this.sparseMaxElements)
                     SwitchToDenseRepresentation();

@@ -17,7 +17,7 @@ namespace HyperLogLog.BenchMark
     /// |     Count14Common | 10 | 828.36 ms |    NA |  9.49 |    4 |
     /// |       Count14Simd | 10 | 107.95 ms |    NA |  1.24 |    2 |
     /// |     Count14Lookup | 10 | 115.41 ms |    NA |  1.32 |    3 |
-    /// |      Count14 | 10 |  87.30 ms |    NA |  1.00 |    1 |
+    /// |           Count14 | 10 |  87.30 ms |    NA |  1.00 |    1 |
     /// </summary>
     [SimpleJob(RunStrategy.ColdStart, launchCount: 1, warmupCount: 1, targetCount: 1)]
     [RankColumn]

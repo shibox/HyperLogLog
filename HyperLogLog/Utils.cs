@@ -249,6 +249,12 @@ namespace HyperLogLog
             throw new ArgumentOutOfRangeException("bits", "Unexpected number of bits (should never happen)");
         }
 
+        internal unsafe static ulong Count(byte[] look, int m = 16384, int bitsPerIndex = 14)
+        {
+            fixed (byte* p = look)
+                return Count(p, m, bitsPerIndex);
+        }
+
         internal unsafe static ulong Count(byte* look, int m = 16384, int bitsPerIndex = 14)
         {
             double alpha = GetAlphaM(m);
